@@ -15,6 +15,52 @@ const FontStyle = () => (
   `}</style>
 );
 
+
+type TabKey = "warnings"|"personnel"|"missions"|"match"
+
+const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
+  {
+    key: "warnings",
+    label: "Status & Warnings",
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  },
+  {
+    key: "personnel",
+    label: "Personnel",
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          d="M17 20h5v-2a4 4 0 00-5-3.87M9 20H4v-2a4 4 0 015-3.87m6-4a4 4 0 11-8 0 4 4 0 018 0z" />
+      </svg>
+    ),
+  },
+  {
+    key: "missions",
+    label: "Missions",
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          d="M3 21l9-9m0 0l9-9M12 12L3 3m9 9l9 9" />
+      </svg>
+    ),
+  },
+  {
+    key: "match",
+    label: "Match Results",
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          d="M22 2L11 13M22 2L15 22 11 13 2 9l20-7z" />
+      </svg>
+    ),
+  },
+];
+
 interface PersonnelDeploymentPlannerProps {
   persons: Personnel[];
   missions: Mission[];
@@ -26,6 +72,7 @@ export default function PersonnelDeploymentPlanner({
 }: PersonnelDeploymentPlannerProps) {
   const [missionName, setMissionName] = useState("");
   const [matchedPersonnels, setMatchedPersonnels] = useState<Personnel[]>([]);
+  const [activeTab, setActiveTab] = useState<TabKey>("warnings");
 
    const overworkedCount = persons.filter(p => p.availability < 70).length;
  
@@ -57,11 +104,57 @@ export default function PersonnelDeploymentPlanner({
             </div>
           </div>
         </div>
+
+        {/* ── Tab Navbar ── */}
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <nav className="flex gap-1 overflow-x-auto" aria-label="Tabs">
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`
+                    flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium
+                    transition-colors duration-150 focus:outline-none
+                    ${
+                      isActive
+                        ? "border-indigo-600 text-indigo-600"
+                        : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                    }
+                  `}
+                  aria-current={isActive ? "page" : undefined}
+                >
+                  {tab.icon}
+                  {tab.label}
+                  {/* Badge — show overwork count on warnings tab */}
+                  {tab.key === "warnings" && overworkedCount > 0 && (
+                    <span className="ml-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-600">
+                      {overworkedCount}
+                    </span>
+                  )}
+                  {/* Badge — show counts on personnel / missions tabs */}
+                  {tab.key === "personnel" && (
+                    <span className="ml-1 rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-600">
+                      {persons.length}
+                    </span>
+                  )}
+                  {tab.key === "missions" && (
+                    <span className="ml-1 rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-600">
+                      {missions.length}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+        </div>
       </header>
  
       <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8 flex flex-col gap-6">
  
         {/* Status & Warnings */}
+         {activeTab === "warnings" && (
         <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
           <h2 className="mb-4 flex items-center gap-2 text-base font-bold text-gray-900">
             <svg className="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -71,8 +164,10 @@ export default function PersonnelDeploymentPlanner({
           </h2>
           <WarningPanel persons={persons} />
         </section>
+         )}
  
         {/* Personnel */}
+         {activeTab === "personnel" && (
         <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="flex items-center gap-2 text-base font-bold text-gray-900">
@@ -89,8 +184,10 @@ export default function PersonnelDeploymentPlanner({
             {persons.map(person => <PersonnelCard key={person.id} person={person} />)}
           </div>
         </section>
+         )}
  
         {/* Missions */}
+         {activeTab === "missions" && (
         <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="flex items-center gap-2 text-base font-bold text-gray-900">
@@ -107,8 +204,10 @@ export default function PersonnelDeploymentPlanner({
             {missions.map(mission => <MissionCard key={mission.id} mission={mission} />)}
           </div>
         </section>
+         )}
  
         {/* Match Results */}
+         {activeTab === "match" && (
         <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
           <h2 className="mb-4 flex items-center gap-2 text-base font-bold text-gray-900">
             <svg className="h-4 w-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -138,6 +237,7 @@ export default function PersonnelDeploymentPlanner({
             </div>
           )}
         </section>
+         )}
  
       </main>
     </div>
