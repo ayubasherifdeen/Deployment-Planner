@@ -1,3 +1,6 @@
+"use client";
+
+
 import type { Mission } from "../data/models";
 
 

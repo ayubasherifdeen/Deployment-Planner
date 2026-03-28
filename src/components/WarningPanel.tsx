@@ -1,3 +1,6 @@
+"use client";
+
+
 import type { Personnel } from "../data/models";
 
 interface WarningPanelProps {

@@ -1,13 +1,18 @@
+"use client";
+
+
 import type{ Personnel } from "../data/models";
 
 
 
 interface PersonnelCardProps {
   person: Personnel;
+  onRemove:(id:string)=>void
 }
 
 export function PersonnelCard({
   person,
+  onRemove
 }: PersonnelCardProps) {
   const rankColors: Record<string, string> = {
     Private: "bg-gray-100 text-gray-700",
@@ -42,6 +47,25 @@ export function PersonnelCard({
               {person.rank}
             </span>
           </div>
+          <button
+          onClick={() => onRemove(person.id)}
+          className="text-gray-400 transition-colors hover:text-red-500"
+          title="Remove personnel"
+        >
+          <svg
+            className="h-5 w-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
         </div>
         {overworked && (
           <span className="rounded-full border border-red-200 bg-red-100 px-2 py-0.5 text-xs font-bold text-red-600">

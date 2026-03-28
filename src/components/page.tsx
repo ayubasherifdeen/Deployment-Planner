@@ -1,3 +1,6 @@
+"use client";
+
+
 import PersonnelCard from "./PersonnelCard";
 import MissionCard from "./MissionCard";
 import MakeMatchPanel from "./MakeMatchPanel";
@@ -5,8 +8,12 @@ import { useState } from "react";
 import { getEligiblePersonnel } from "../utils/getEligiblePersonnels";
 import type { Mission } from "../data/models";
 import type { Personnel } from "../data/models";
-
 import { WarningPanel } from "./WarningPanel";
+import { AddPersonnelForm } from "./addPersonnelForm";
+import { AddMissionForm } from "./addMissionForm";
+import INITIAL_PERSONNEL from "../data/PersonnelData";
+import INITIAL_MISSIONS from "../data/MissionData";
+
 const FontStyle = () => (
   <style>{`
     @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@700;800&display=swap');
@@ -61,28 +68,36 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   },
 ];
 
-interface PersonnelDeploymentPlannerProps {
-  persons: Personnel[];
-  missions: Mission[];
-}
 
-export default function PersonnelDeploymentPlanner({
-  persons,
-  missions,
-}: PersonnelDeploymentPlannerProps) {
+
+export default function PersonnelDeploymentPlanner() {
+  const [personnel, setPersonnel] = useState<Personnel[]>(INITIAL_PERSONNEL);
+  const [missions, setMissions]   = useState<Mission[]>(INITIAL_MISSIONS);
   const [missionName, setMissionName] = useState("");
   const [matchedPersonnels, setMatchedPersonnels] = useState<Personnel[]>([]);
   const [activeTab, setActiveTab] = useState<TabKey>("warnings");
+  const [showAddPersonnel, setShowAddPersonnel]=useState(false);
+  const [showAddMission, setShowAddMission] = useState(false)
 
-   const overworkedCount = persons.filter(p => p.availability < 70).length;
+   const overworkedCount = personnel.filter(p => p.availability < 70).length;
  
   const onMatch = () => {
     const selectedMission = missions.find((m) => m.name === missionName);
     if (!selectedMission) return;
-    const result = getEligiblePersonnel(selectedMission, persons);
+    const result = getEligiblePersonnel(selectedMission, personnel);
     setMatchedPersonnels(result);
   };
 
+  const handleAddPersonnel = (newPerson: Personnel) => {
+    setPersonnel((prev) => [...prev, newPerson]);
+    setShowAddPersonnel(false);
+  };
+
+  const handleAddMission = (newMission: Mission) => {
+  setMissions(prev => [...prev, newMission]);
+  setShowAddMission(false);
+};
+  
   return (
     
     <div className="min-h-screen bg-gray-100">
@@ -92,11 +107,11 @@ export default function PersonnelDeploymentPlanner({
         <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="font-display text-2xl font-bold text-gray-900">Personnel Deployment Planner</h1>
+              <h2 className="font-display text-xl font-bold text-gray-900">Personnel Deployment Planner</h2>
               <p className="mt-0.5 text-sm text-gray-500">Match personnel to missions intelligently while avoiding overwork</p>
             </div>
             <div className="hidden items-center gap-3 text-sm sm:flex">
-              <span className="rounded-full bg-indigo-100 px-3 py-1 font-semibold text-indigo-700">{persons.length} personnel</span>
+              <span className="rounded-full bg-indigo-100 px-3 py-1 font-semibold text-indigo-700">{personnel.length} personnel</span>
               <span className="rounded-full bg-gray-100 px-3 py-1 font-semibold text-gray-600">{missions.length} missions</span>
               {overworkedCount > 0 && (
                 <span className="rounded-full bg-red-100 px-3 py-1 font-semibold text-red-600">{overworkedCount} overworked</span>
@@ -136,7 +151,7 @@ export default function PersonnelDeploymentPlanner({
                   {/* Badge — show counts on personnel / missions tabs */}
                   {tab.key === "personnel" && (
                     <span className="ml-1 rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-600">
-                      {persons.length}
+                      {personnel.length}
                     </span>
                   )}
                   {tab.key === "missions" && (
@@ -162,7 +177,7 @@ export default function PersonnelDeploymentPlanner({
             </svg>
             Status &amp; Warnings
           </h2>
-          <WarningPanel persons={persons} />
+          <WarningPanel persons={personnel} />
         </section>
          )}
  
@@ -177,11 +192,28 @@ export default function PersonnelDeploymentPlanner({
               Personnel
             </h2>
             <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-600">
-              {persons.length} units
+              {personnel.length} units
             </span>
+            <button
+                className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+                onClick={()=>setShowAddPersonnel(true)}
+              >
+                + Add
+              </button>
+              
+              
+          </div>
+          <div className="space-y-3 m-4">
+            {showAddPersonnel && (
+                <AddPersonnelForm
+                  onAdd={handleAddPersonnel}
+                  onCancel={() => setShowAddPersonnel(false)}
+                />
+              )}
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {persons.map(person => <PersonnelCard key={person.id} person={person} />)}
+            
+            {personnel.map(person => <PersonnelCard key={person.id} person={person} />)}
           </div>
         </section>
          )}
@@ -199,8 +231,23 @@ export default function PersonnelDeploymentPlanner({
             <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-600">
               {missions.length} active
             </span>
+            <button
+                className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+                onClick={()=>setShowAddMission(true)}
+              >
+                + Add
+              </button>
+          </div>
+          <div className="space-y-3 m-4">
+             {showAddMission && (
+                <AddMissionForm
+                  onAdd={handleAddMission}
+                  onCancel={() => setShowAddMission(false)}
+                />
+              )}
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-2">
+           
             {missions.map(mission => <MissionCard key={mission.id} mission={mission} />)}
           </div>
         </section>
@@ -230,7 +277,7 @@ export default function PersonnelDeploymentPlanner({
           )}
           {matchedPersonnels.length > 0 && (
             
-            <div className="mt-4 space-y-2 flex flex-space-around flex-wrap m-4">
+            <div className="mt-4 space-y-2 m-6">
               {matchedPersonnels.map((person) => (
                 <PersonnelCard key={person.id} person={person} />
               ))}

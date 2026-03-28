@@ -1,4 +1,4 @@
-export type Rank = "General" | "Captain" | "Lieutenant" | "Private";
+export type Rank = "General" |"Colonel"|"Captain" | "Lieutenant" | "Private";
 
 export interface Personnel {
   id: string;
