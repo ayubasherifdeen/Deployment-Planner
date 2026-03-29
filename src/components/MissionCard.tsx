@@ -5,11 +5,13 @@ import type{ Mission } from "../data/models"
 
 interface MissionCardProps {
   mission: Mission;
+  onRemove:(id:string)=>void
 
 }
 
 export function MissionCard({
-  mission
+  mission,
+  onRemove
 }: MissionCardProps) {
    const priorityStyles = {
     Low:    "bg-gray-100 text-gray-700 border-gray-200",
@@ -28,10 +30,32 @@ export function MissionCard({
       <div className="mb-3 flex items-start justify-between">
         <div>
           <h3 className="font-semibold text-gray-900">{mission.name}</h3>
+          
           <span className={`mt-1 inline-block rounded-full border px-2 py-0.5 text-xs font-semibold ${priorityStyles[mission.priority]}`}>
             {mission.priority} Priority
           </span>
+          
+          
         </div>
+        <button
+          onClick={() => onRemove(mission.id)}
+          className="text-gray-400 transition-colors hover:text-red-500"
+          title="Remove personnel"
+        >
+          <svg
+            className="h-5 w-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
         
       </div>
  

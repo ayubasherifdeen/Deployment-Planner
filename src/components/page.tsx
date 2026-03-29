@@ -93,10 +93,20 @@ export default function PersonnelDeploymentPlanner() {
     setShowAddPersonnel(false);
   };
 
+   const handleRemovePersonnel = (id: string) => {
+    setPersonnel((prev) => prev.filter((p) => p.id !== id));
+    
+  };
+
   const handleAddMission = (newMission: Mission) => {
   setMissions(prev => [...prev, newMission]);
   setShowAddMission(false);
 };
+
+ const handleRemoveMission = (id: string) => {
+    setMissions((prev) => prev.filter((m) => m.id !== id));
+    
+  };
   
   return (
     
@@ -213,7 +223,10 @@ export default function PersonnelDeploymentPlanner() {
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             
-            {personnel.map(person => <PersonnelCard key={person.id} person={person} />)}
+            {personnel.map(person => <PersonnelCard key={person.id}
+            person={person}
+            onRemove={handleRemovePersonnel}
+             />)}
           </div>
         </section>
          )}
@@ -248,7 +261,10 @@ export default function PersonnelDeploymentPlanner() {
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-2">
            
-            {missions.map(mission => <MissionCard key={mission.id} mission={mission} />)}
+            {missions.map(mission => <MissionCard key={mission.id} 
+            mission={mission} 
+            onRemove={handleRemoveMission}
+            />)}
           </div>
         </section>
          )}
