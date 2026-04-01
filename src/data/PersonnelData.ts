@@ -1,6 +1,6 @@
 import type { Personnel } from "./models";
 
-const INITIAL_PERSONNEL: Personnel[] = [
+export const INITIAL_PERSONNEL: Personnel[] = [
   {
     id: "p1",
     name: "Sarah Chen",
@@ -53,5 +53,4 @@ const INITIAL_PERSONNEL: Personnel[] = [
 
 
 
- export default INITIAL_PERSONNEL
-
+export default INITIAL_PERSONNEL
