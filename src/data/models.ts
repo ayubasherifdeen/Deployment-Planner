@@ -19,3 +19,14 @@ export interface Mission {
 
 }
 
+
+type Role = "admin" | "personnel";
+
+export interface AppUser {
+  id: string;
+  email:string
+  password:string
+  role: Role;
+  personnelId: string | null;
+  name: string;
+}
