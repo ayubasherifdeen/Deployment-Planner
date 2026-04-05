@@ -9,6 +9,7 @@ interface MatchPanelProps {
   missionName: string;
   onMissionChange: (name: string) => void;
   onMatch: () => void;
+  
 }
 
 export function MakeMatchPanel({
@@ -16,6 +17,7 @@ export function MakeMatchPanel({
   missionName,
   onMissionChange,
   onMatch,
+
 }: MatchPanelProps) {
 
   const handleSubmit = (e: React.FormEvent) => { 

@@ -5,8 +5,7 @@ export interface Personnel {
   name: string;
   rank: Rank;
   skills: string[];
-  availability: number;
-  assignedMissions: number;
+  assignedMissionIds: string[]
 }
 
 export type Priority = "Low" | "Medium" | "High";
@@ -16,6 +15,7 @@ export interface Mission {
   name: string;
   requiredSkills: string[];
   priority: Priority;
+  assignedPersonnel:string[]
 
 }
 

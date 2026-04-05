@@ -26,7 +26,7 @@ export function AddPersonnelForm({ onCancel, onAdd }:AddPersonnelFormProps){
   const [availability, setAvailability] = useState(100);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([])
   const [rank, setRank] = useState<Rank>("Private");
-  const [assignedMissions, setAssignedMissions] = useState(0)
+  const [assignedMissionIds, setAssignedMissionIds] = useState<string[]>([])
 
   const toggleSkill = (skill: string) => {
     setSelectedSkills((prev) =>
@@ -43,8 +43,7 @@ export function AddPersonnelForm({ onCancel, onAdd }:AddPersonnelFormProps){
       name: name.trim(),
       rank,
       skills: selectedSkills,
-      availability,
-      assignedMissions
+      assignedMissionIds,
     })
   };
   
@@ -88,9 +87,10 @@ export function AddPersonnelForm({ onCancel, onAdd }:AddPersonnelFormProps){
             Assigned Missions
           </label>
           <input type="number"   className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          value = {assignedMissions}
-          onChange={(e) => setAssignedMissions(Number(e.target.value))}
-          min={0}/>
+          value = {assignedMissionIds}
+          onChange={(e) => setAssignedMissionIds([...assignedMissionIds, e.target.value])}
+          hidden
+          />
         </div>
        <div className="mb-4">
         <label className="mb-1 block text-sm font-medium text-gray-700">

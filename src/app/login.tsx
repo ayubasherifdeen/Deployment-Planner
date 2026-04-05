@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState} from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
@@ -11,7 +11,7 @@ const FontStyle = () => (
 );
 
 export default function LoginPage() {
-  const { login , user }   = useAuth();
+  const { login  }   = useAuth();
   const navigate    = useNavigate();
 
   const [email, setEmail]       = useState("");

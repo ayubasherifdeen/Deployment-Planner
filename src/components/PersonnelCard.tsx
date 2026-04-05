@@ -21,17 +21,26 @@ export function PersonnelCard({
     General: "bg-amber-100 text-amber-700",
   };
 
+  const assignedMissions =  person.assignedMissionIds.length
+  let availability;
+  if (assignedMissions === 0 ){
+    availability = 100 
+  }else{
+    availability = assignedMissions * 20
+  }
+  const overworked = availability < 60
+
   const avBarColor =
-    person.availability >= 70 ? "bg-green-500" :
-    person.availability >= 40 ? "bg-yellow-500" : "bg-red-500"
+    availability >= 70 ? "bg-green-500" :
+    availability >= 40 ? "bg-yellow-500" : "bg-red-500"
 
   const avTextColor =
-    person.availability >= 70 ? "text-green-600" :
-    person.availability >= 40 ? "text-yellow-600" : "text-red-600";
+    availability >= 70 ? "text-green-600" :
+    availability >= 40 ? "text-yellow-600" : "text-red-600";
 
   const initials = person.name.split(" ").map(n => n[0]).slice(0, 2).join('');   
 
-  const overworked = person.availability < 70;
+  
   
   return (
     <div className={`rounded-xl border p-4 transition-all hover:-translate-y-0.5 hover:shadow-md ${overworked ? "border-red-200 bg-red-50" : "border-gray-200 bg-white"}`}>
@@ -90,19 +99,19 @@ export function PersonnelCard({
       <div className="mb-2">
         <div className="mb-1.5 flex items-center justify-between">
           <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Availability</p>
-          <span className={`text-xs font-bold ${avTextColor}`}>{person.availability}%</span>
+          <span className={`text-xs font-bold ${avTextColor}`}>{availability}%</span>
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
           <div
             className={`h-full rounded-full transition-all duration-500 ${avBarColor}`}
-            style={{ width: `${person.availability}%` }}
+            style={{ width: `${availability}%` }}
           />
         </div>
       </div>
  
-      {person.assignedMissions > 0 && (
+      {person.assignedMissionIds.length > 0 && (
         <p className="mt-2 text-xs text-gray-500">
-          Assigned to <span className="font-semibold text-gray-700">{person.assignedMissions}</span> mission{person.assignedMissions !== 1 ? "s" : ""}
+          Assigned to <span className="font-semibold text-gray-700">{person.assignedMissionIds.length}</span> mission{person.assignedMissionIds.length !== 1 ? "s" : ""}
         </p>
       )}
     </div>

@@ -7,6 +7,7 @@ const INITIAL_MISSIONS: Mission[] = [
     name: "Operation Firewall",
     requiredSkills: ["Cybersecurity", "Data Analysis"],
     priority: "High",
+    assignedPersonnel:[],
   },
   {
     
@@ -14,24 +15,28 @@ const INITIAL_MISSIONS: Mission[] = [
     name: "Diplomatic Summit",
     requiredSkills: ["Leadership", "Negotiation", "Communications"],
     priority: "Medium",
+    assignedPersonnel:[],
   },
   {
     id: "m3",
     name: "Supply Chain Review",
     requiredSkills: ["Logistics", "Data Analysis"],
     priority: "Low",
+    assignedPersonnel:[],
   },
    {
     id: "m4",
     name: "West Zhao Invasion",
     requiredSkills: ["Logistics", "Communication"],
     priority: "High",
+    assignedPersonnel:[],
   },
    {
     id: "m5",
     name: "Presidential Escort",
     requiredSkills: ["Communication", "Negotiation"],
     priority: "High",
+    assignedPersonnel:[],
   },
 ];
 

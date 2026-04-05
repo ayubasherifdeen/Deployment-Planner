@@ -7,11 +7,13 @@ import type{ Personnel } from "../data/models";
 
 interface MatchedPersonnelCardProps {
   person: Personnel;
+  onAssign: (missionId: string, personnelId: string) => void;
   
 }
 
 export function MatchedPersonnelCard({
   person,
+  onAssign,
 
 }: MatchedPersonnelCardProps) {
   const rankColors: Record<string, string> = {

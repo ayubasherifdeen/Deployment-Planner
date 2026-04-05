@@ -2,7 +2,7 @@
 import type { Mission, Personnel } from "../data/models";
 
 export function checkAvailability(personnel:Personnel):boolean{
-  return (personnel.availability >= 70)
+  return (personnel.assignedMissionIds.length < 3)
 }
 
 export function checkSkills(personnel:Personnel, mission:Mission):boolean{

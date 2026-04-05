@@ -28,6 +28,7 @@ export function AddMissionForm({ onCancel, onAdd }:AddMissionMissionFormProps){
     const [priority, setPriority] = useState("")
     const PRIORITIES: Priority[] = ["Low", "Medium", "High"];
     const [requiredSkills, setrequiredSkills] = useState<string[]>([])
+    const [assignedPersonnels, setAssignedPersonnels] = useState<string[]>([])
 
   const toggleSkill = (skill: string) => {
     setrequiredSkills((prev) =>
@@ -44,6 +45,7 @@ export function AddMissionForm({ onCancel, onAdd }:AddMissionMissionFormProps){
       name:           name.trim(),
       priority:       priority as Priority,
       requiredSkills: requiredSkills,
+      assignedPersonnel: assignedPersonnels
     });
   }
     return(
@@ -85,6 +87,20 @@ export function AddMissionForm({ onCancel, onAdd }:AddMissionMissionFormProps){
             </option>
           ))}
         </select>
+      </div>
+
+      <div className="mb-4">
+        <label className="mb-1 block text-sm font-medium text-gray-700">
+          Assigned Personnels
+        </label>
+        <input
+          type="text"
+          value={assignedPersonnels}
+          onChange={(e) => setAssignedPersonnels([...assignedPersonnels, e.target.value])}
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          hidden
+          
+        />
       </div>
 
       <div className="mb-4">

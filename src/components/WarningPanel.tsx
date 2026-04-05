@@ -8,8 +8,9 @@ interface WarningPanelProps {
 }
 
 export function WarningPanel({ persons }: WarningPanelProps) {
-  const overworked = persons.filter((person) => person.availability < 70);
-
+   const overworked = persons.filter(p => p.assignedMissionIds.length >= 3)
+   
+  
  if (overworked.length === 0) {
     return (
       <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 p-4">
@@ -34,7 +35,7 @@ export function WarningPanel({ persons }: WarningPanelProps) {
           <div>
             <p className="text-sm font-semibold text-red-700">{person.name} is overworked</p>
             <p className="text-xs text-red-500">
-              Availability at <strong>{person.availability}%</strong> — assigned to {person.assignedMissions} mission{person.assignedMissions !== 1 ? "s" : ""}
+              Availability at <strong>{availability}%</strong> — assigned to {person.assignedMissionIds.length} mission{person.assignedMissionIds.length !== 1 ? "s" : ""}
             </p>
           </div>
         </div>
