@@ -11,19 +11,19 @@ export const USERS: AppUser[] = [
   },
   {
     id: "u2",
-    email: "adaeze@deployforce.com",
+    email: "sarah@deployforce.com",
     password: "soldier123",
     role: "personnel",
     personnelId: "p1", 
-    name: "Sgt. Adaeze Osei",
+    name: "Sarah Chen",
   },
   {
     id: "u3",
-    email: "kwame@deployforce.com",
+    email: "marcus@deployforce.com",
     password: "soldier123",
     role: "personnel",
     personnelId: "p2",
-    name: "Lt. Kwame Asante",
+    name: "Marcus Johnson",
   },
 ]
 

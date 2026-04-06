@@ -5,17 +5,21 @@ export interface Personnel {
   name: string;
   rank: Rank;
   skills: string[];
-  availability: number;
-  assignedMissions: number;
+  assignedMissionIds: string[]
 }
 
 export type Priority = "Low" | "Medium" | "High";
+export type MissionStatus = "planning" | "inProgress" | "completed";
 
 export interface Mission {
   id: string;
   name: string;
+ 
   requiredSkills: string[];
   priority: Priority;
+  assignedPersonnel:string[]
+  teamSize:number,
+  status:MissionStatus
 
 }
 
