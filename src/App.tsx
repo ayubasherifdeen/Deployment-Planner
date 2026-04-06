@@ -1,9 +1,12 @@
 import './App.css'
+import INITIAL_MISSIONS from './data/MissionData'
+import type{ Mission } from './data/models'
 import PersonnelDeploymentPlanner from './app/adminDashboard'
 import LoginPage from './app/login'
 import PersonnelDashboard from './app/personnelDashboard'
 import { useAuth } from './context/AuthContext'
 import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom'
+import { useState } from 'react'
 
 
 
@@ -40,6 +43,13 @@ function ProtectedRoute({
 
 
 export default function App() {
+   const [missions, setMissions] = useState<Mission[]>(INITIAL_MISSIONS);
+
+  const handleMarkComplete = (missionId: string) => {
+    setMissions(prev => prev.map(m =>
+      m.id === missionId ? { ...m, status: "completed" as const } : m
+    ));
+  };
   return(
    
      <BrowserRouter>
@@ -50,7 +60,9 @@ export default function App() {
          path="/app/adminDashboard" 
          element={
             <ProtectedRoute requiredRole="admin">
-               <PersonnelDeploymentPlanner />
+               <PersonnelDeploymentPlanner
+               missions={missions}
+               setMissions={setMissions} />
             </ProtectedRoute>
          }
          />
@@ -59,7 +71,10 @@ export default function App() {
           path="/app/personnelDashboard"
           element={
             <ProtectedRoute requiredRole="personnel">
-              <PersonnelDashboard />
+              <PersonnelDashboard
+              missions={missions}
+             onMarkComplete={handleMarkComplete}
+              />
             </ProtectedRoute>
           }
         />

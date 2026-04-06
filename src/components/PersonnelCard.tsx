@@ -1,6 +1,6 @@
 "use client";
 
-
+import { deriveAvailability } from "../utils/deriveAvailability";
 import type{ Personnel } from "../data/models";
 
 
@@ -12,7 +12,8 @@ interface PersonnelCardProps {
 
 export function PersonnelCard({
   person,
-  onRemove
+  onRemove,
+ 
 }: PersonnelCardProps) {
   const rankColors: Record<string, string> = {
     Private: "bg-gray-100 text-gray-700",
@@ -21,29 +22,23 @@ export function PersonnelCard({
     General: "bg-amber-100 text-amber-700",
   };
 
-  const assignedMissions =  person.assignedMissionIds.length
-  let availability;
-  if (assignedMissions === 0 ){
-    availability = 100 
-  }else{
-    availability = assignedMissions * 20
-  }
-  const overworked = availability < 60
+  const availability = deriveAvailability(person);
+  const overstreched = availability < 60
 
   const avBarColor =
-    availability >= 70 ? "bg-green-500" :
-    availability >= 40 ? "bg-yellow-500" : "bg-red-500"
+    availability >= 80 ? "bg-green-500" :
+    availability >= 60 ? "bg-yellow-500" : "bg-red-500"
 
   const avTextColor =
-    availability >= 70 ? "text-green-600" :
-    availability >= 40 ? "text-yellow-600" : "text-red-600";
+    availability >= 80 ? "text-green-600" :
+    availability >= 60 ? "text-yellow-600" : "text-red-600";
 
   const initials = person.name.split(" ").map(n => n[0]).slice(0, 2).join('');   
 
   
   
   return (
-    <div className={`rounded-xl border p-4 transition-all hover:-translate-y-0.5 hover:shadow-md ${overworked ? "border-red-200 bg-red-50" : "border-gray-200 bg-white"}`}>
+    <div className={`rounded-xl border p-4 transition-all hover:-translate-y-0.5 hover:shadow-md ${overstreched ? "border-red-200 bg-red-50" : "border-gray-200 bg-white"}`}>
       {/* Header */}
       <div className="mb-3 flex items-start justify-between">
         <div className="flex items-center gap-3">
@@ -76,9 +71,9 @@ export function PersonnelCard({
           </svg>
         </button>
         </div>
-        {overworked && (
+        {overstreched && (
           <span className="rounded-full border border-red-200 bg-red-100 px-2 py-0.5 text-xs font-bold text-red-600">
-            ⚠ OVERWORKED
+            ⚠ overstreched
           </span>
         )}
       </div>

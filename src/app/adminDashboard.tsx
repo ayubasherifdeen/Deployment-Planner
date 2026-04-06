@@ -1,17 +1,16 @@
 import PersonnelCard from "../components/PersonnelCard";
 import MissionCard from "../components/MissionCard";
 import AssignmentPanel from "../components/assignmentPanel";
-import { useState } from "react";
-import type { Mission } from "../data/models";
-import type { Personnel } from "../data/models";
+import AssignedMissionsTab from "./assignedMissionsTab";
+import { useState, useEffect } from "react";
+import type { Mission, Personnel } from "../data/models";
 import { WarningPanel } from "../components/WarningPanel";
 import { AddPersonnelForm } from "../components/addPersonnelForm";
 import { AddMissionForm } from "../components/addMissionForm";
 import INITIAL_PERSONNEL from "../data/PersonnelData";
-import INITIAL_MISSIONS from "../data/MissionData";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
- 
+
 const FontStyle = () => (
   <style>{`
     @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@700;800&display=swap');
@@ -19,10 +18,9 @@ const FontStyle = () => (
     .font-display { font-family: 'Syne', sans-serif !important; }
   `}</style>
 );
- 
 
-type TabKey = "warnings" | "personnel" | "missions";
- 
+type TabKey = "warnings" | "personnel" | "missions" | "assignedMissions";
+
 const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   {
     key: "warnings",
@@ -54,77 +52,103 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
       </svg>
     ),
   },
+  {
+    key: "assignedMissions",
+    label: "Assigned Missions",
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+      </svg>
+    ),
+  },
 ];
- 
-export default function PersonnelDeploymentPlanner() {
+
+interface Props {
+  missions:    Mission[];
+  setMissions: React.Dispatch<React.SetStateAction<Mission[]>>;
+}
+
+// Bug fix: was `}):Props` — correct syntax is `}: Props`
+export default function PersonnelDeploymentPlanner({ missions, setMissions }: Props) {
   const [personnel, setPersonnel]               = useState<Personnel[]>(INITIAL_PERSONNEL);
-  const [missions, setMissions]                 = useState<Mission[]>(INITIAL_MISSIONS);
   const [activeTab, setActiveTab]               = useState<TabKey>("warnings");
   const [showAddPersonnel, setShowAddPersonnel] = useState(false);
   const [showAddMission, setShowAddMission]     = useState(false);
   const [assigningMissionId, setAssigningMissionId] = useState<string | null>(null);
- 
+
   const { user, logout } = useAuth();
   const navigate         = useNavigate();
- 
-  const overworkedCount = personnel.filter(p => p.assignedMissionIds.length >= 3).length
- 
+
+  // Persist missions to localStorage so personnelDashboard always reads latest
+  useEffect(() => {
+    localStorage.setItem("missions", JSON.stringify(missions));
+  }, [missions]);
+
+  const overstrechedCount = personnel.filter(p => p.assignedMissionIds.length >= 3).length;
+
   const handleLogout = () => {
     logout();
     navigate("/app/login");
   };
- 
+
   const handleAddPersonnel = (newPerson: Personnel) => {
     setPersonnel(prev => [...prev, newPerson]);
     setShowAddPersonnel(false);
   };
- 
+
   const handleRemovePersonnel = (id: string) => {
     setPersonnel(prev => prev.filter(p => p.id !== id));
   };
- 
+
   const handleAddMission = (newMission: Mission) => {
     setMissions(prev => [...prev, newMission]);
     setShowAddMission(false);
   };
- 
+
   const handleRemoveMission = (id: string) => {
     setMissions(prev => prev.filter(m => m.id !== id));
   };
- 
+
   const handleToggleAssign = (missionId: string) => {
     setAssigningMissionId(prev => prev === missionId ? null : missionId);
   };
- 
-  
+
   const handleConfirmAssignment = (missionId: string, selectedIds: string[]) => {
-    const updatedMissions = missions.map(m =>
-      m.id === missionId
-        ? { ...m, assignedPersonnel: selectedIds }
-        : m
-    );
- 
+    const updatedMissions = missions.map(m => {
+      if (m.id !== missionId) return m;
+      const isFullyAssigned = selectedIds.length >= m.teamSize;
+      return {
+        ...m,
+        assignedPersonnel: selectedIds,
+        status: isFullyAssigned ? "inProgress" as const : "planning" as const,
+      };
+    });
+
     setMissions(updatedMissions);
- 
+
+    // Bug fix: was setting `assignedMissions: count` (number) — Personnel model uses
+    // assignedMissionIds: string[], so we rebuild the array from updatedMissions
     setPersonnel(prev => prev.map(person => {
-      const count = updatedMissions.filter(m =>
-        m.assignedPersonnel.includes(person.id)
-      ).length;
-      return { ...person, assignedMissions: count };
+      const assignedMissionIds = updatedMissions
+        .filter(m => m.assignedPersonnel.includes(person.id))
+        .map(m => m.id);
+      return { ...person, assignedMissionIds };
     }));
- 
+
     setAssigningMissionId(null);
   };
- 
+
+  // Only planning missions show in the Missions tab
+  const planningMissions = missions.filter(m => m.status === "planning");
+
   return (
     <div className="min-h-screen bg-gray-100">
       <FontStyle />
- 
-      {/* Header */}
+
       <header className="border-b border-gray-200 bg-white shadow-sm">
         <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6 lg:px-8">
- 
-          {/* User bar */}
+
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">
@@ -134,7 +158,6 @@ export default function PersonnelDeploymentPlanner() {
                 Welcome, <span className="font-semibold text-gray-900">{user?.name}</span>
               </span>
             </div>
- 
             <button
               onClick={handleLogout}
               className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
@@ -146,8 +169,7 @@ export default function PersonnelDeploymentPlanner() {
               Sign Out
             </button>
           </div>
- 
-          {/* Title row */}
+
           <div className="flex items-center justify-between">
             <div>
               <h2 className="font-display text-xl font-bold text-gray-900">
@@ -164,16 +186,15 @@ export default function PersonnelDeploymentPlanner() {
               <span className="rounded-full bg-gray-100 px-3 py-1 font-semibold text-gray-600">
                 {missions.length} missions
               </span>
-              {overworkedCount > 0 && (
+              {overstrechedCount > 0 && (
                 <span className="rounded-full bg-red-100 px-3 py-1 font-semibold text-red-600">
-                  {overworkedCount} overworked
+                  {overstrechedCount} overstreched
                 </span>
               )}
             </div>
           </div>
         </div>
- 
-        {/* Tab Navbar */}
+
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <nav className="flex gap-1 overflow-x-auto" aria-label="Tabs">
             {TABS.map(tab => {
@@ -192,9 +213,9 @@ export default function PersonnelDeploymentPlanner() {
                 >
                   {tab.icon}
                   {tab.label}
-                  {tab.key === "warnings" && overworkedCount > 0 && (
+                  {tab.key === "warnings" && overstrechedCount > 0 && (
                     <span className="ml-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-600">
-                      {overworkedCount}
+                      {overstrechedCount}
                     </span>
                   )}
                   {tab.key === "personnel" && (
@@ -204,7 +225,12 @@ export default function PersonnelDeploymentPlanner() {
                   )}
                   {tab.key === "missions" && (
                     <span className="ml-1 rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-600">
-                      {missions.length}
+                      {planningMissions.length}
+                    </span>
+                  )}
+                  {tab.key === "assignedMissions" && (
+                    <span className="ml-1 rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-600">
+                      {missions.filter(m => m.status !== "planning").length}
                     </span>
                   )}
                 </button>
@@ -213,10 +239,9 @@ export default function PersonnelDeploymentPlanner() {
           </nav>
         </div>
       </header>
- 
+
       <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8 flex flex-col gap-6">
- 
-        {/* Warnings */}
+
         {activeTab === "warnings" && (
           <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
             <h2 className="mb-4 flex items-center gap-2 text-base font-bold text-gray-900">
@@ -229,8 +254,7 @@ export default function PersonnelDeploymentPlanner() {
             <WarningPanel persons={personnel} />
           </section>
         )}
- 
-        {/* Personnel */}
+
         {activeTab === "personnel" && (
           <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
@@ -270,8 +294,7 @@ export default function PersonnelDeploymentPlanner() {
             </div>
           </section>
         )}
- 
-        {/* Missions */}
+
         {activeTab === "missions" && (
           <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
@@ -279,7 +302,7 @@ export default function PersonnelDeploymentPlanner() {
                 Missions
               </h2>
               <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-600">
-                {missions.length} active
+                {planningMissions.length} planning
               </span>
               <button
                 className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
@@ -288,7 +311,7 @@ export default function PersonnelDeploymentPlanner() {
                 + Add
               </button>
             </div>
- 
+
             {showAddMission && (
               <div className="mb-4">
                 <AddMissionForm
@@ -297,9 +320,9 @@ export default function PersonnelDeploymentPlanner() {
                 />
               </div>
             )}
- 
+
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {missions.map(mission => (
+              {planningMissions.map(mission => (
                 <div key={mission.id} className="flex flex-col">
                   <MissionCard
                     mission={mission}
@@ -312,15 +335,24 @@ export default function PersonnelDeploymentPlanner() {
                       mission={mission}
                       personnel={personnel}
                       onConfirm={handleConfirmAssignment}
-                      onClose={() => setAssigningMissionId(null)}
                     />
                   )}
                 </div>
               ))}
+
+              {planningMissions.length === 0 && (
+                <p className="col-span-2 py-6 text-center text-sm text-gray-400">
+                  All missions have been assigned. Check the Assigned Missions tab.
+                </p>
+              )}
             </div>
           </section>
         )}
- 
+
+        {activeTab === "assignedMissions" && (
+          <AssignedMissionsTab missions={missions} />
+        )}
+
       </main>
     </div>
   );

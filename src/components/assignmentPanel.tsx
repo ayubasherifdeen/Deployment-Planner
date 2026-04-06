@@ -3,20 +3,20 @@ import type { Mission, Personnel } from "../data/models";
 import { getEligiblePersonnel } from "../utils/getEligiblePersonnels";
 import PersonnelCard from "./PersonnelCard";
  
-const MAX_MISSIONS = 2;
+const MAX_MISSIONS = 3;
  
 interface AssignmentPanelProps {
   mission:   Mission;
   personnel: Personnel[];
   onConfirm: (missionId: string, selectedIds: string[]) => void;
-  onClose:   () => void;
+
 }
  
 export default function AssignmentPanel({
   mission,
   personnel,
   onConfirm,
-  onClose,
+  
 }: AssignmentPanelProps) {
  
   const eligible = getEligiblePersonnel(mission, personnel);
@@ -73,6 +73,7 @@ export default function AssignmentPanel({
       <PersonnelCard
         person={person}
         onRemove={() => {}}
+    
       />
 
       <div className="flex flex-col gap-1.5 border-t border-gray-100 bg-gray-50 px-4 py-2">

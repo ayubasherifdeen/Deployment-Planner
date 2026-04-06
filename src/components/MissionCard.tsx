@@ -38,14 +38,16 @@ export function MissionCard({
               {mission.priority} Priority
             </span>
           </div>
+          
  
           <div className="text-right">
             <p className="text-xs text-gray-400">Assigned</p>
             <p className="text-base font-extrabold text-gray-800">
-              {mission.assignedPersonnel.length}
+              {mission.assignedPersonnel.length}/{mission.teamSize}
             </p>
           </div>
         </div>
+        
  
         {/* Required skills */}
         <div className="mb-3">

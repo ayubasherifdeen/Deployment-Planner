@@ -1,71 +1,57 @@
-"use client";
-
-
-import {useState} from "react"
-import type{ Mission, Priority } from "../data/models"
+import { useState } from "react";
+import type { Mission, Priority } from "../data/models";
 
 const COMMON_SKILLS = [
-  "Leadership",
-  "Cybersecurity",
-  "Data Analysis",
-  "Field Operations",
-  "Communications",
-  "Intelligence",
-  "Logistics",
-  "Medical",
-  "Engineering",
-  "Negotiation",
+  "Leadership", "Cybersecurity", "Data Analysis", "Field Operations",
+  "Communications", "Intelligence", "Logistics", "Medical", "Engineering", "Negotiation",
 ];
 
-
-interface AddMissionMissionFormProps{
-    onCancel:()=>void
-    onAdd: (mission: Mission)=>void;
+interface AddMissionFormProps {
+  onCancel: () => void;
+  onAdd:    (mission: Mission) => void;
 }
 
-export function AddMissionForm({ onCancel, onAdd }:AddMissionMissionFormProps){
-    const [name, setName] = useState("")
-    const [priority, setPriority] = useState("")
-    const PRIORITIES: Priority[] = ["Low", "Medium", "High"];
-    const [requiredSkills, setrequiredSkills] = useState<string[]>([])
-    const [assignedPersonnels, setAssignedPersonnels] = useState<string[]>([])
+export function AddMissionForm({ onCancel, onAdd }: AddMissionFormProps) {
+  const [name, setName]                     = useState("");
+  const [priority, setPriority]             = useState<Priority>("Medium");
+  const [requiredSkills, setRequiredSkills]  = useState<string[]>([]);
+  const [teamSize, setTeamSize]             = useState(2);
+  const [objective, setObjective]           = useState(""); // ← new
+
+  const PRIORITIES: Priority[] = ["Low", "Medium", "High"];
 
   const toggleSkill = (skill: string) => {
-    setrequiredSkills((prev) =>
-      prev.includes(skill) ? prev.filter((s) => s !== skill) : [...prev, skill]
+    setRequiredSkills(prev =>
+      prev.includes(skill) ? prev.filter(s => s !== skill) : [...prev, skill]
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {    // ← add handler
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || requiredSkills.length === 0) return;
 
     onAdd({
-      id:             crypto.randomUUID(),
-      name:           name.trim(),
-      priority:       priority as Priority,
-      requiredSkills: requiredSkills,
-      assignedPersonnel: assignedPersonnels
+      id:                crypto.randomUUID(),
+      name:              name.trim(),
+      priority,
+      requiredSkills,
+      assignedPersonnel: [], // always starts empty
+      teamSize,
+      status:            "planning",
+      
     });
-  }
-    return(
-        <form
-     
-      className="rounded-lg border border-indigo-200 bg-indigo-50 p-4"
-      onSubmit={handleSubmit}
-    >
-      <h3 className="mb-4 text-lg font-semibold text-gray-900">
-        Add New Mission
-      </h3>
+  };
+
+  return (
+    <form className="rounded-lg border border-indigo-200 bg-indigo-50 p-4" onSubmit={handleSubmit}>
+      <h3 className="mb-4 text-lg font-semibold text-gray-900">Add New Mission</h3>
 
       <div className="mb-4">
-        <label className="mb-1 block text-sm font-medium text-gray-700">
-          Mission Name
-        </label>
+        <label className="mb-1 block text-sm font-medium text-gray-700">Mission Name</label>
         <input
           type="text"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={e => setName(e.target.value)}
           className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           placeholder="Enter mission name"
           required
@@ -73,33 +59,37 @@ export function AddMissionForm({ onCancel, onAdd }:AddMissionMissionFormProps){
       </div>
 
       <div className="mb-4">
-        <label className="mb-1 block text-sm font-medium text-gray-700">
-          Priority
-        </label>
+        <label className="mb-1 block text-sm font-medium text-gray-700">Priority</label>
         <select
           value={priority}
-          onChange={(e) => setPriority(e.target.value as Priority)}
+          onChange={e => setPriority(e.target.value as Priority)}
           className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         >
-          {PRIORITIES.map((p) => (
-            <option key={p} value={p}>
-              {p}
-            </option>
-          ))}
+          {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
       </div>
 
       <div className="mb-4">
-        <label className="mb-1 block text-sm font-medium text-gray-700">
-          Assigned Personnels
-        </label>
+        <label className="mb-1 block text-sm font-medium text-gray-700">Team Size</label>
         <input
-          type="text"
-          value={assignedPersonnels}
-          onChange={(e) => setAssignedPersonnels([...assignedPersonnels, e.target.value])}
+          type="number"
+          min={1}
+          max={20}
+          value={teamSize}
+          onChange={e => setTeamSize(Number(e.target.value))}
           className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          hidden
-          
+        />
+      </div>
+
+      {/* ← new objective field */}
+      <div className="mb-4">
+        <label className="mb-1 block text-sm font-medium text-gray-700">Mission Objective</label>
+        <textarea
+          value={objective}
+          onChange={e => setObjective(e.target.value)}
+          rows={3}
+          placeholder="Describe what this mission aims to achieve..."
+          className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         />
       </div>
 
@@ -108,7 +98,7 @@ export function AddMissionForm({ onCancel, onAdd }:AddMissionMissionFormProps){
           Required Skills (select at least one)
         </label>
         <div className="flex flex-wrap gap-2">
-          {COMMON_SKILLS.map((skill) => (
+          {COMMON_SKILLS.map(skill => (
             <button
               key={skill}
               type="button"
@@ -125,13 +115,10 @@ export function AddMissionForm({ onCancel, onAdd }:AddMissionMissionFormProps){
         </div>
       </div>
 
-      
-      
       <div className="flex gap-2">
         <button
           type="submit"
-          
-          className="flex-1 rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+          className="flex-1 rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white transition-colors hover:bg-indigo-700"
         >
           Add Mission
         </button>
@@ -144,5 +131,5 @@ export function AddMissionForm({ onCancel, onAdd }:AddMissionMissionFormProps){
         </button>
       </div>
     </form>
-    )
+  );
 }

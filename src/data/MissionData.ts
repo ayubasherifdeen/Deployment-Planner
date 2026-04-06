@@ -8,6 +8,8 @@ const INITIAL_MISSIONS: Mission[] = [
     requiredSkills: ["Cybersecurity", "Data Analysis"],
     priority: "High",
     assignedPersonnel:[],
+    teamSize:3,
+    status:"planning",
   },
   {
     
@@ -16,6 +18,8 @@ const INITIAL_MISSIONS: Mission[] = [
     requiredSkills: ["Leadership", "Negotiation", "Communications"],
     priority: "Medium",
     assignedPersonnel:[],
+    teamSize:2,
+    status:"planning"
   },
   {
     id: "m3",
@@ -23,6 +27,8 @@ const INITIAL_MISSIONS: Mission[] = [
     requiredSkills: ["Logistics", "Data Analysis"],
     priority: "Low",
     assignedPersonnel:[],
+    teamSize:3,
+    status:"planning"
   },
    {
     id: "m4",
@@ -30,6 +36,8 @@ const INITIAL_MISSIONS: Mission[] = [
     requiredSkills: ["Logistics", "Communication"],
     priority: "High",
     assignedPersonnel:[],
+    teamSize:3,
+    status:"planning"
   },
    {
     id: "m5",
@@ -37,6 +45,8 @@ const INITIAL_MISSIONS: Mission[] = [
     requiredSkills: ["Communication", "Negotiation"],
     priority: "High",
     assignedPersonnel:[],
+    teamSize:3,
+    status:"planning"
   },
 ];
 
