@@ -3,7 +3,6 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import INITIAL_PERSONNEL from "../data/PersonnelData";
 import PersonnelCard from "../components/PersonnelCard";
-// Bug fix: Mission type was used but never imported
 import type { Mission } from "../data/models";
 
 const FontStyle = () => (
