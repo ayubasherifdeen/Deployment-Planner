@@ -18,8 +18,8 @@ export function WarningPanel({ persons }: WarningPanelProps) {
             d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         <div>
-          <p className="font-semibold text-green-700">All systems operational</p>
-          <p className="text-sm text-green-600">No overwork warnings detected</p>
+          <p className="font-semibold text-green-700">All personnels operational</p>
+          <p className="text-sm text-green-600">No overstreched warnings detected</p>
         </div>
       </div>
     );
@@ -28,7 +28,7 @@ export function WarningPanel({ persons }: WarningPanelProps) {
   return (
     <div className="space-y-2">
       {overstreched.map(person => {
-        // Bug fix: `availability` was referenced but never defined in this scope
+        
         const availability = deriveAvailability(person);
         return (
           <div key={person.id} className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-3">

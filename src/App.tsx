@@ -43,8 +43,10 @@ function ProtectedRoute({
 
 
 export default function App() {
-   const [missions, setMissions] = useState<Mission[]>(INITIAL_MISSIONS);
-
+  const [missions, setMissions] = useState<Mission[]>(() => {
+    const stored = localStorage.getItem("missions");
+    return stored ? JSON.parse(stored) : INITIAL_MISSIONS;
+})
   const handleMarkComplete = (missionId: string) => {
     setMissions(prev => prev.map(m =>
       m.id === missionId ? { ...m, status: "completed" as const } : m
@@ -73,7 +75,7 @@ export default function App() {
             <ProtectedRoute requiredRole="personnel">
               <PersonnelDashboard
               missions={missions}
-             onMarkComplete={handleMarkComplete}
+              onMarkComplete={handleMarkComplete}
               />
             </ProtectedRoute>
           }

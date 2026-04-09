@@ -63,8 +63,6 @@ export function MissionCard({
           </div>
         </div>
  
-        {/* Assigned personnel — shows names not raw ids */}
-        {/* Bug fix: was mission.assignedPersonnelId */}
         {mission.assignedPersonnel.length > 0 && (
           <div className="mb-3">
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">

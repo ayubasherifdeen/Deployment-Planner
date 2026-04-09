@@ -127,8 +127,6 @@ export default function PersonnelDeploymentPlanner({ missions, setMissions }: Pr
 
     setMissions(updatedMissions);
 
-    // Bug fix: was setting `assignedMissions: count` (number) — Personnel model uses
-    // assignedMissionIds: string[], so we rebuild the array from updatedMissions
     setPersonnel(prev => prev.map(person => {
       const assignedMissionIds = updatedMissions
         .filter(m => m.assignedPersonnel.includes(person.id))
