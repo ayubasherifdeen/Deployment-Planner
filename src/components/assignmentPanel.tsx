@@ -166,7 +166,7 @@ export default function AssignmentPanel({
         onClick={() => onConfirm(mission.id, selected)}
         className="mt-3 w-full rounded-lg bg-indigo-600 py-2 text-xs font-bold text-white transition-colors hover:bg-indigo-700"
       >
-        Confirm assignments ({selected.length} selected)
+        Confirm assignments ({selected.length}/{mission.teamSize} selected)
       </button>
     </div>
   );

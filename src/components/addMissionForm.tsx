@@ -4,6 +4,7 @@ import type { Mission, Priority } from "../data/models";
 const COMMON_SKILLS = [
   "Leadership", "Cybersecurity", "Data Analysis", "Field Operations",
   "Communications", "Intelligence", "Logistics", "Medical", "Engineering", "Negotiation",
+  "Reconnaisance",
 ];
 
 interface AddMissionFormProps {
@@ -16,7 +17,7 @@ export function AddMissionForm({ onCancel, onAdd }: AddMissionFormProps) {
   const [priority, setPriority]             = useState<Priority>("Medium");
   const [requiredSkills, setRequiredSkills]  = useState<string[]>([]);
   const [teamSize, setTeamSize]             = useState(2);
-  const [objective, setObjective]           = useState(""); // ← new
+
 
   const PRIORITIES: Priority[] = ["Low", "Medium", "High"];
 
@@ -81,17 +82,7 @@ export function AddMissionForm({ onCancel, onAdd }: AddMissionFormProps) {
         />
       </div>
 
-      {/* ← new objective field */}
-      <div className="mb-4">
-        <label className="mb-1 block text-sm font-medium text-gray-700">Mission Objective</label>
-        <textarea
-          value={objective}
-          onChange={e => setObjective(e.target.value)}
-          rows={3}
-          placeholder="Describe what this mission aims to achieve..."
-          className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-        />
-      </div>
+     
 
       <div className="mb-4">
         <label className="mb-1 block text-sm font-medium text-gray-700">

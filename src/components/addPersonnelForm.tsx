@@ -4,23 +4,34 @@ import type { Personnel, Rank } from "../data/models";
 const RANK: Rank[] = ["General", "Colonel", "Captain", "Lieutenant", "Private"];
 
 const COMMON_SKILLS = [
-  "Leadership", "Cybersecurity", "Data Analysis", "Field Operations",
-  "Communications", "Intelligence", "Logistics", "Medical", "Engineering", "Negotiation",
+  "Leadership",
+  "Cybersecurity",
+  "Data Analysis",
+  "Field Operations",
+  "Communications",
+  "Intelligence",
+  "Logistics",
+  "Medical",
+  "Engineering",
+  "Negotiation",
+  "Reconnaisance",
 ];
 
 interface AddPersonnelFormProps {
-  onAdd:    (personnel: Personnel) => void;
+  onAdd: (personnel: Personnel, email: string, password: string) => void;
   onCancel: () => void;
 }
 
 export function AddPersonnelForm({ onCancel, onAdd }: AddPersonnelFormProps) {
-  const [name, setName]                   = useState("");
+  const [name, setName] = useState("");
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
-  const [rank, setRank]                   = useState<Rank>("Private");
+  const [rank, setRank] = useState<Rank>("Private");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const toggleSkill = (skill: string) => {
-    setSelectedSkills(prev =>
-      prev.includes(skill) ? prev.filter(s => s !== skill) : [...prev, skill]
+    setSelectedSkills((prev) =>
+      prev.includes(skill) ? prev.filter((s) => s !== skill) : [...prev, skill],
     );
   };
 
@@ -29,40 +40,96 @@ export function AddPersonnelForm({ onCancel, onAdd }: AddPersonnelFormProps) {
     e.preventDefault();
     if (!name.trim() || selectedSkills.length === 0) return;
 
-    onAdd({
-      id:                 crypto.randomUUID(),
-      name:               name.trim(),
-      rank,
-      skills:             selectedSkills,
-      assignedMissionIds: [], // always starts empty — gets populated via assignment
-    });
+    onAdd(
+      {
+        id: crypto.randomUUID(),
+        name: name.trim(),
+        rank,
+        skills: selectedSkills,
+        assignedMissionIds: [], // always starts empty — gets populated via assignment
+      },
+      email.trim(),
+      password,
+    );
   };
 
   return (
-    <form className="rounded-lg border border-blue-200 bg-blue-50 p-4" onSubmit={handleSubmit}>
-      <h3 className="mb-4 text-lg font-semibold text-gray-900">Add New Personnel</h3>
+    <form
+      className="rounded-lg border border-blue-200 bg-blue-50 p-4"
+      onSubmit={handleSubmit}
+    >
+      <h3 className="mb-4 text-lg font-semibold text-gray-900">
+        Add New Personnel
+      </h3>
 
       <div className="mb-4">
-        <label className="mb-1 block text-sm font-medium text-gray-700">Name</label>
+        <label className="mb-1 block text-sm font-medium text-gray-700">
+          Name
+        </label>
         <input
           type="text"
           className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           placeholder="Enter name"
           value={name}
-          onChange={e => setName(e.target.value)}
+          onChange={(e) => setName(e.target.value)}
           required
         />
       </div>
 
       <div className="mb-4">
-        <label className="mb-1 block text-sm font-medium text-gray-700">Rank</label>
+        <label className="mb-1 block text-sm font-medium text-gray-700">
+          Rank
+        </label>
         <select
           className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          onChange={e => setRank(e.target.value as Rank)}
+          onChange={(e) => setRank(e.target.value as Rank)}
           value={rank}
         >
-          {RANK.map(r => <option key={r} value={r}>{r}</option>)}
+          {RANK.map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
+          ))}
         </select>
+      </div>
+
+      {/* ── Login credentials ── */}
+      <div className="mb-4 rounded-lg border border-blue-200 bg-blue-100 p-3">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-700">
+          Login Credentials
+        </p>
+
+        <div className="mb-2">
+          <label className="mb-1 block text-sm font-medium text-gray-700">
+            Email
+          </label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            placeholder="personnel@deployforce.com"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700">
+            Password
+          </label>
+          <input
+            type="text" // visible so admin can note it down
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            placeholder="Minimum 6 characters"
+            minLength={6}
+            required
+          />
+          <p className="mt-1 text-xs text-blue-600">
+            Share these credentials with the personnel member after adding.
+          </p>
+        </div>
       </div>
 
       <div className="mb-4">
@@ -70,7 +137,7 @@ export function AddPersonnelForm({ onCancel, onAdd }: AddPersonnelFormProps) {
           Skills (select at least one)
         </label>
         <div className="flex flex-wrap gap-2">
-          {COMMON_SKILLS.map(skill => (
+          {COMMON_SKILLS.map((skill) => (
             <button
               key={skill}
               type="button"
