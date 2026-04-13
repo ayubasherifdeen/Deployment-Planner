@@ -7,9 +7,12 @@ import type { Mission, Personnel } from "../data/models";
 import { WarningPanel } from "../components/WarningPanel";
 import { AddPersonnelForm } from "../components/addPersonnelForm";
 import { AddMissionForm } from "../components/addMissionForm";
-import INITIAL_PERSONNEL from "../data/PersonnelData";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { updateDoc, doc, collection, deleteDoc, setDoc } from "firebase/firestore";
+import { db, secondaryAuth } from "../lib/firebase";
+import { onSnapshot } from "firebase/firestore";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 
 const FontStyle = () => (
   <style>{`
@@ -64,14 +67,10 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   },
 ];
 
-interface Props {
-  missions:    Mission[];
-  setMissions: React.Dispatch<React.SetStateAction<Mission[]>>;
-}
 
-// Bug fix: was `}):Props` — correct syntax is `}: Props`
-export default function PersonnelDeploymentPlanner({ missions, setMissions }: Props) {
-  const [personnel, setPersonnel]               = useState<Personnel[]>(INITIAL_PERSONNEL);
+export default function PersonnelDeploymentPlanner( ) {
+  const [personnel, setPersonnel]               = useState<Personnel[]>([]);
+  const [missions, setMissions] = useState<Mission[]>([]);
   const [activeTab, setActiveTab]               = useState<TabKey>("warnings");
   const [showAddPersonnel, setShowAddPersonnel] = useState(false);
   const [showAddMission, setShowAddMission]     = useState(false);
@@ -80,62 +79,123 @@ export default function PersonnelDeploymentPlanner({ missions, setMissions }: Pr
   const { user, logout } = useAuth();
   const navigate         = useNavigate();
 
-  // Persist missions to localStorage so personnelDashboard always reads latest
-  useEffect(() => {
-    localStorage.setItem("missions", JSON.stringify(missions));
-  }, [missions]);
-
   const overstrechedCount = personnel.filter(p => p.assignedMissionIds.length >= 3).length;
 
-  const handleLogout = () => {
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "personnel"), (snapshot) => {
+      const updated = snapshot.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          ...data,
+          assignedMissionIds: data.assignedMissionIds ?? [],
+        };
+      }) as Personnel[];
+      setPersonnel(updated);
+    });
+    return unsub;
+  }, []);
+
+ useEffect(() => {
+  const unsub = onSnapshot(collection(db, "missions"), snap => {
+    const data = snap.docs.map(d => {
+      const m = d.data();
+      return {
+        id: d.id,
+        ...m,
+        assignedPersonnel: m.assignedPersonnel ?? [], // 🔥 normalize
+      };
+    }) as Mission[];
+
+    setMissions(data);
+  });
+
+  return unsub;
+}, []);
+
+  const handleLogout = async () => {
     logout();
     navigate("/app/login");
   };
 
-  const handleAddPersonnel = (newPerson: Personnel) => {
-    setPersonnel(prev => [...prev, newPerson]);
+ const handleAddPersonnel = async (newPerson: Personnel, email:string, password:string) => {
+  try{
+    //create use with secondaryauth
+    const result = await createUserWithEmailAndPassword(
+      secondaryAuth, email, password
+    );
+    const userUid = result.user.uid
+    await setDoc(doc(db, "users", userUid), {
+      name:        newPerson.name,
+      role:        "personnel",
+      personnelId: newPerson.id
+    });
+  
+     await setDoc(doc(db, "personnel", newPerson.id), {
+      ...newPerson,
+      assignedMissionIds: [],
+    });
+
     setShowAddPersonnel(false);
+  }catch(err:any){
+    console.error("Failed to add personnel:", err.message);
+    alert(err.message);
+  }
+}
+
+  const handleRemovePersonnel = async(id: string) => {
+    await deleteDoc(doc(db, "personnel", id));
   };
 
-  const handleRemovePersonnel = (id: string) => {
-    setPersonnel(prev => prev.filter(p => p.id !== id));
-  };
-
-  const handleAddMission = (newMission: Mission) => {
-    setMissions(prev => [...prev, newMission]);
+  const handleAddMission = async(newMission: Mission) => {
+    await setDoc(doc(db, "missions", newMission.id), newMission);
     setShowAddMission(false);
   };
 
-  const handleRemoveMission = (id: string) => {
-    setMissions(prev => prev.filter(m => m.id !== id));
+  const handleRemoveMission = async(id: string) => {
+    await deleteDoc(doc(db, "missions", id));
   };
 
   const handleToggleAssign = (missionId: string) => {
     setAssigningMissionId(prev => prev === missionId ? null : missionId);
   };
 
-  const handleConfirmAssignment = (missionId: string, selectedIds: string[]) => {
-    const updatedMissions = missions.map(m => {
-      if (m.id !== missionId) return m;
-      const isFullyAssigned = selectedIds.length >= m.teamSize;
-      return {
-        ...m,
-        assignedPersonnel: selectedIds,
-        status: isFullyAssigned ? "inProgress" as const : "planning" as const,
-      };
+ const handleConfirmAssignment = async (missionId: string, selectedIds: string[]) => {
+  const mission = missions.find(m => m.id === missionId);
+  if (!mission) return;
+
+  const isFullyAssigned = selectedIds.length >= mission.teamSize;
+
+  try {
+    await updateDoc(doc(db, "missions", missionId), {
+      assignedPersonnel: selectedIds,
+      status: isFullyAssigned ? "inProgress" : "planning",
     });
 
-    setMissions(updatedMissions);
+    const allAffectedIds = Array.from(new Set([
+      ...selectedIds,
+      ...(mission.assignedPersonnel ?? []),
+    ]));
 
-    setPersonnel(prev => prev.map(person => {
-      const assignedMissionIds = updatedMissions
-        .filter(m => m.assignedPersonnel.includes(person.id))
+    for (const personId of allAffectedIds) {
+      const updatedMissionIds = missions
+        .map(m => m.id === missionId
+          ? { ...m, assignedPersonnel: selectedIds }
+          : m
+        )
+        .filter(m => m.assignedPersonnel.includes(personId))
         .map(m => m.id);
-      return { ...person, assignedMissionIds };
-    }));
 
+      await updateDoc(doc(db, "personnel", personId), {
+        assignedMissionIds: updatedMissionIds,
+      });
+    }
+  } catch (err) {
+    console.error("Assignment failed:", err); 
+  } finally {
     setAssigningMissionId(null);
-  };
+  }
+};
 
   // Only planning missions show in the Missions tab
   const planningMissions = missions.filter(m => m.status === "planning");

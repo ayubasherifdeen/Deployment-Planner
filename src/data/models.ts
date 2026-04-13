@@ -5,7 +5,7 @@ export interface Personnel {
   name: string;
   rank: Rank;
   skills: string[];
-  assignedMissionIds: string[]
+  assignedMissionIds: string[];
 }
 
 export type Priority = "Low" | "Medium" | "High";
@@ -29,7 +29,6 @@ type Role = "admin" | "personnel";
 export interface AppUser {
   id: string;
   email:string
-  password:string
   role: Role;
   personnelId: string | null;
   name: string;

@@ -1,12 +1,13 @@
 import './App.css'
-import INITIAL_MISSIONS from './data/MissionData'
 import type{ Mission } from './data/models'
 import PersonnelDeploymentPlanner from './app/adminDashboard'
 import LoginPage from './app/login'
 import PersonnelDashboard from './app/personnelDashboard'
 import { useAuth } from './context/AuthContext'
 import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore'
+import { db } from './lib/firebase'
 
 
 
@@ -43,18 +44,38 @@ function ProtectedRoute({
 
 
 export default function App() {
-  const [missions, setMissions] = useState<Mission[]>(() => {
-    const stored = localStorage.getItem("missions");
-    return stored ? JSON.parse(stored) : INITIAL_MISSIONS;
-})
-  const handleMarkComplete = (missionId: string) => {
-    setMissions(prev => prev.map(m =>
-      m.id === missionId ? { ...m, status: "completed" as const } : m
-    ));
+  const [missions, setMissions] = useState<Mission[]>([])
+  const [missionsLoading, setMissionsLoading] = useState(true);
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "missions"), snapshot => {
+      const updated = snapshot.docs.map(d => ({
+        id: d.id,
+        ...d.data(),
+      })) as Mission[];
+      setMissions(updated);
+      setMissionsLoading(false);
+    });
+    return unsub;
+  }, []);
+
+  const handleMarkComplete = async (missionId: string) => {
+    await updateDoc(doc(db, "missions", missionId), {
+      status: "completed",
+    });
   };
+
+  if (missionsLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-sm text-gray-500">Loading...</p>
+      </div>
+    );
+  }
+
   return(
    
-     <BrowserRouter>
+     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Routes>
          <Route path="/app/login" element={<LoginPage />}/>
      
@@ -63,8 +84,8 @@ export default function App() {
          element={
             <ProtectedRoute requiredRole="admin">
                <PersonnelDeploymentPlanner
-               missions={missions}
-               setMissions={setMissions} />
+              
+               />
             </ProtectedRoute>
          }
          />

@@ -1,9 +1,11 @@
-
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import INITIAL_PERSONNEL from "../data/PersonnelData";
 import PersonnelCard from "../components/PersonnelCard";
 import type { Mission } from "../data/models";
+import { doc, getDoc } from "firebase/firestore";
+import { useState, useEffect } from "react";
+import type { Personnel } from "../data/models";
+import { db } from "../lib/firebase";
 
 const FontStyle = () => (
   <style>{`
@@ -14,23 +16,39 @@ const FontStyle = () => (
 );
 
 interface Props {
-  missions:       Mission[];
+  missions: Mission[];
   onMarkComplete: (missionId: string) => void;
 }
 
-export default function PersonnelDashboard({ missions, onMarkComplete }: Props) {
+export default function PersonnelDashboard({
+  missions,
+  onMarkComplete,
+}: Props) {
   const { user, logout } = useAuth();
-  const navigate         = useNavigate();
+  const navigate = useNavigate();
+  const [myRecord, setMyRecord] = useState<Personnel | null>(null);
 
-  const myRecord = INITIAL_PERSONNEL.find(p => p.id === user?.personnelId);
+  useEffect(() => {
+    if (!user?.personnelId) return;
+    // Fetch just their own personnel record
+    getDoc(doc(db, "personnel", user.personnelId)).then((snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setMyRecord({
+          id: snap.id,
+          ...data,
+          assignedMissionIds: data.assignedMissionIds ?? [],
+        } as Personnel);
+      }
+    });
+  }, [user?.personnelId]);
 
-  // Only missions this person is assigned to
-  const myMissions = missions.filter(m =>
-    m.assignedPersonnel.includes(user?.personnelId ?? "")
+  const myMissions = missions.filter((m) =>
+    m.assignedPersonnel.includes(user?.personnelId ?? ""),
   );
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/app/login");
   };
 
@@ -40,23 +58,34 @@ export default function PersonnelDashboard({ missions, onMarkComplete }: Props) 
 
       <header className="border-b border-gray-200 bg-white shadow-sm">
         <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6 lg:px-8">
-
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">
                 {user?.name?.charAt(0)}
               </div>
               <span className="text-sm font-medium text-gray-700">
-                Welcome, <span className="font-semibold text-gray-900">{user?.name}</span>
+                Welcome,{" "}
+                <span className="font-semibold text-gray-900">
+                  {user?.name}
+                </span>
               </span>
             </div>
             <button
               onClick={handleLogout}
               className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
             >
-              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              <svg
+                className="h-3.5 w-3.5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
               </svg>
               Sign Out
             </button>
@@ -66,23 +95,25 @@ export default function PersonnelDashboard({ missions, onMarkComplete }: Props) 
             <h2 className="font-display text-xl font-bold text-gray-900">
               Personnel Deployment Planner
             </h2>
-            <p className="mt-0.5 text-sm text-gray-500">Your deployment overview</p>
+            <p className="mt-0.5 text-sm text-gray-500">
+              Your deployment overview
+            </p>
           </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-3xl px-4 py-6 flex flex-col gap-6">
-
         {/* Their own profile card */}
         {myRecord && (
           <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h2 className="mb-4 text-base font-bold text-gray-900">Your Profile</h2>
+            <h2 className="mb-4 text-base font-bold text-gray-900">
+              Your Profile
+            </h2>
             {/* onRemove is a no-op — personnel can't remove themselves */}
             <PersonnelCard person={myRecord} onRemove={() => {}} />
           </section>
         )}
 
-        
         {/* assigned missions */}
         <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
           <h2 className="mb-4 text-base font-bold text-gray-900">
@@ -95,20 +126,25 @@ export default function PersonnelDashboard({ missions, onMarkComplete }: Props) 
             </p>
           ) : (
             <div className="flex flex-col gap-3">
-              {myMissions.map(mission => (
+              {myMissions.map((mission) => (
                 <div
                   key={mission.id}
                   className={`rounded-xl border p-4 transition-all
-                    ${mission.status === "completed"
-                      ? "border-green-200 bg-green-50"
-                      : "border-gray-200 bg-white"
+                    ${
+                      mission.status === "completed"
+                        ? "border-green-200 bg-green-50"
+                        : "border-gray-200 bg-white"
                     }`}
                 >
                   {/* Header */}
                   <div className="mb-2 flex items-start justify-between gap-3">
                     <div>
-                      <h3 className="font-semibold text-gray-900">{mission.name}</h3>
-                      <span className="text-xs text-gray-400">{mission.priority} Priority</span>
+                      <h3 className="font-semibold text-gray-900">
+                        {mission.name}
+                      </h3>
+                      <span className="text-xs text-gray-400">
+                        {mission.priority} Priority
+                      </span>
                     </div>
 
                     {/* Completed badge or Mark Complete button */}
@@ -126,12 +162,13 @@ export default function PersonnelDashboard({ missions, onMarkComplete }: Props) 
                     )}
                   </div>
 
-                  
-
                   {/* Required skills */}
                   <div className="flex flex-wrap gap-1">
-                    {mission.requiredSkills.map(skill => (
-                      <span key={skill} className="rounded-md bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700">
+                    {mission.requiredSkills.map((skill) => (
+                      <span
+                        key={skill}
+                        className="rounded-md bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700"
+                      >
                         {skill}
                       </span>
                     ))}
@@ -141,7 +178,6 @@ export default function PersonnelDashboard({ missions, onMarkComplete }: Props) 
             </div>
           )}
         </section>
-
       </main>
     </div>
   );
