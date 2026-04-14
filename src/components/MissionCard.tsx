@@ -65,16 +65,6 @@ export function MissionCard({
  
         {mission.assignedPersonnel.length > 0 && (
           <div className="mb-3">
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Assigned
-            </p>
-            <div className="flex flex-wrap gap-1">
-              {mission.assignedPersonnel.map(id => (
-                <span key={id} className="rounded-md bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-                  {id}
-                </span>
-              ))}
-            </div>
           </div>
         )}
  

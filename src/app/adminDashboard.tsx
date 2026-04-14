@@ -17,12 +17,13 @@ import {
   deleteDoc,
   setDoc,
   query,
+  where,
 } from "firebase/firestore";
-import { Query, where } from "firebase/firestore";
 import { db, secondaryAuth } from "../lib/firebase";
 import { onSnapshot } from "firebase/firestore";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { sendPasswordResetEmail } from "firebase/auth";
+import ConfirmationModal from "../components/confirmationModal";
 
 const FontStyle = () => (
   <style>{`
@@ -122,6 +123,11 @@ export default function PersonnelDeploymentPlanner() {
   const [assigningMissionId, setAssigningMissionId] = useState<string | null>(
     null,
   );
+  const [confirmModal, setConfirmModal] = useState<{
+    type: "removePersonnel" | "logout";
+    personnelId?: string;
+    name?: string;
+  } | null>(null);
 
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -163,7 +169,12 @@ export default function PersonnelDeploymentPlanner() {
   }, []);
 
   const handleLogout = async () => {
-    logout();
+    setConfirmModal({ type: "logout" });
+  };
+
+  const confirmLogout = async () => {
+    setConfirmModal(null);
+    await logout();
     navigate("/app/login");
   };
 
@@ -205,21 +216,32 @@ export default function PersonnelDeploymentPlanner() {
       alert(err.message);
     }
   };
+  //confirmation first
+  const handleRemovePersonnel = (id: string) => {
+    const person = personnel.find((p) => p.id === id);
+    setConfirmModal({
+      type: "removePersonnel",
+      personnelId: id,
+      name: person?.name ?? "this person",
+    });
+  };
+  //actual delete
+  const confirmRemovePersonnel = async () => {
+    if (!confirmModal?.personnelId) return;
+    const id = confirmModal.personnelId;
+    setConfirmModal(null);
 
-  const handleRemovePersonnel = async (id: string) => {
     try {
-      //remove personel record
       await deleteDoc(doc(db, "personnel", id));
-      // filter by personnelId and disable user
+
+      // query for user.id
       const usersQuery = query(
         collection(db, "users"),
         where("personnelId", "==", id),
       );
       const snapshot = await getDocs(usersQuery);
       for (const userDoc of snapshot.docs) {
-        await updateDoc(doc(db, "users", userDoc.id), {
-          disabled: true,
-        });
+        await updateDoc(doc(db, "users", userDoc.id), { disabled: true });
       }
     } catch (err: any) {
       console.error("Failed to remove personnel:", err.message);
@@ -232,6 +254,7 @@ export default function PersonnelDeploymentPlanner() {
     setShowAddMission(false);
   };
 
+  
   const handleRemoveMission = async (id: string) => {
     await deleteDoc(doc(db, "missions", id));
   };
@@ -519,6 +542,32 @@ export default function PersonnelDeploymentPlanner() {
           <AssignedMissionsTab missions={missions} />
         )}
       </main>
+      {/* Confirmation modal — renders on top of everything when active */}
+      {confirmModal?.type === "logout" && (
+        <ConfirmationModal
+          icon="logout"
+          title="Sign out?"
+          body="You will be returned to the login page. Any unsaved changes will be lost."
+          warning="Make sure all assignments have been confirmed before signing out."
+          confirmLabel="Sign Out"
+          confirmClass="bg-amber-500 hover:bg-amber-600"
+          onConfirm={confirmLogout}
+          onCancel={() => setConfirmModal(null)}
+        />
+      )}
+
+      {confirmModal?.type === "removePersonnel" && (
+        <ConfirmationModal
+          icon="remove"
+          title={`Remove ${confirmModal.name}?`}
+          body={`This will disable ${confirmModal.name}'s access to the system. They will no longer be able to log in.`}
+          warning="Their mission history and assignment records will be preserved for audit purposes."
+          confirmLabel="Remove Personnel"
+          confirmClass="bg-red-600 hover:bg-red-700"
+          onConfirm={confirmRemovePersonnel}
+          onCancel={() => setConfirmModal(null)}
+        />
+      )}
     </div>
   );
 }
