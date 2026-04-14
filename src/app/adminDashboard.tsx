@@ -9,7 +9,16 @@ import { AddPersonnelForm } from "../components/addPersonnelForm";
 import { AddMissionForm } from "../components/addMissionForm";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { updateDoc, doc, collection, deleteDoc, setDoc } from "firebase/firestore";
+import {
+  getDocs,
+  updateDoc,
+  doc,
+  collection,
+  deleteDoc,
+  setDoc,
+  query,
+} from "firebase/firestore";
+import { Query, where } from "firebase/firestore";
 import { db, secondaryAuth } from "../lib/firebase";
 import { onSnapshot } from "firebase/firestore";
 import { createUserWithEmailAndPassword } from "firebase/auth";
@@ -30,9 +39,18 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
     key: "warnings",
     label: "Status & Warnings",
     icon: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
       </svg>
     ),
   },
@@ -40,9 +58,18 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
     key: "personnel",
     label: "Personnel",
     icon: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-          d="M17 20h5v-2a4 4 0 00-5-3.87M9 20H4v-2a4 4 0 015-3.87m6-4a4 4 0 11-8 0 4 4 0 018 0z" />
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M17 20h5v-2a4 4 0 00-5-3.87M9 20H4v-2a4 4 0 015-3.87m6-4a4 4 0 11-8 0 4 4 0 018 0z"
+        />
       </svg>
     ),
   },
@@ -50,9 +77,18 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
     key: "missions",
     label: "Missions",
     icon: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-          d="M3 21l9-9m0 0l9-9M12 12L3 3m9 9l9 9" />
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M3 21l9-9m0 0l9-9M12 12L3 3m9 9l9 9"
+        />
       </svg>
     ),
   },
@@ -60,27 +96,39 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
     key: "assignedMissions",
     label: "Assigned Missions",
     icon: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+        />
       </svg>
     ),
   },
 ];
 
-
-export default function PersonnelDeploymentPlanner( ) {
-  const [personnel, setPersonnel]               = useState<Personnel[]>([]);
+export default function PersonnelDeploymentPlanner() {
+  const [personnel, setPersonnel] = useState<Personnel[]>([]);
   const [missions, setMissions] = useState<Mission[]>([]);
-  const [activeTab, setActiveTab]               = useState<TabKey>("warnings");
+  const [activeTab, setActiveTab] = useState<TabKey>("warnings");
   const [showAddPersonnel, setShowAddPersonnel] = useState(false);
-  const [showAddMission, setShowAddMission]     = useState(false);
-  const [assigningMissionId, setAssigningMissionId] = useState<string | null>(null);
+  const [showAddMission, setShowAddMission] = useState(false);
+  const [assigningMissionId, setAssigningMissionId] = useState<string | null>(
+    null,
+  );
 
   const { user, logout } = useAuth();
-  const navigate         = useNavigate();
+  const navigate = useNavigate();
 
-  const overstrechedCount = personnel.filter(p => p.assignedMissionIds.length >= 3).length;
+  const overstrechedCount = personnel.filter(
+    (p) => p.assignedMissionIds.length >= 3,
+  ).length;
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "personnel"), (snapshot) => {
@@ -97,116 +145,141 @@ export default function PersonnelDeploymentPlanner( ) {
     return unsub;
   }, []);
 
- useEffect(() => {
-  const unsub = onSnapshot(collection(db, "missions"), snap => {
-    const data = snap.docs.map(d => {
-      const m = d.data();
-      return {
-        id: d.id,
-        ...m,
-        assignedPersonnel: m.assignedPersonnel ?? [], // 🔥 normalize
-      };
-    }) as Mission[];
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "missions"), (snap) => {
+      const data = snap.docs.map((d) => {
+        const m = d.data();
+        return {
+          id: d.id,
+          ...m,
+          assignedPersonnel: m.assignedPersonnel ?? [], // 🔥 normalize
+        };
+      }) as Mission[];
 
-    setMissions(data);
-  });
+      setMissions(data);
+    });
 
-  return unsub;
-}, []);
+    return unsub;
+  }, []);
 
   const handleLogout = async () => {
     logout();
     navigate("/app/login");
   };
 
- const handleAddPersonnel = async (newPerson: Personnel, email:string, password:string) => {
-  try{
-    //create user with secondaryauth
-    password = crypto.randomUUID()
-    const result = await createUserWithEmailAndPassword(
-      secondaryAuth, email, password
-    );
-    const userUid = result.user.uid
+  const handleAddPersonnel = async (
+    newPerson: Personnel,
+    email: string,
+    password: string,
+  ) => {
+    try {
+      //create user with secondaryauth
+      password = crypto.randomUUID();
+      const result = await createUserWithEmailAndPassword(
+        secondaryAuth,
+        email,
+        password,
+      );
+      const userUid = result.user.uid;
 
-    //create user account
-    await setDoc(doc(db, "users", userUid), {
-      name:        newPerson.name,
-      role:        "personnel",
-      personnelId: newPerson.id
-    });
-    
-    //create personnel record
-     await setDoc(doc(db, "personnel", newPerson.id), {
-      ...newPerson,
-      assignedMissionIds: [],
-    });
-    await sendPasswordResetEmail(secondaryAuth, email);
+      //create user account
+      await setDoc(doc(db, "users", userUid), {
+        name: newPerson.name,
+        role: "personnel",
+        personnelId: newPerson.id,
+      });
 
-    setShowAddPersonnel(false);
-    alert(`Account created. A password setup email has been sent to ${email}`)
+      //create personnel record
+      await setDoc(doc(db, "personnel", newPerson.id), {
+        ...newPerson,
+        assignedMissionIds: [],
+      });
+      await sendPasswordResetEmail(secondaryAuth, email);
 
-  }catch(err:any){
-    console.error("Failed to add personnel:", err.message);
-    alert(err.message);
-  }
-}
-
-  const handleRemovePersonnel = async(id: string) => {
-    await deleteDoc(doc(db, "personnel", id));
+      setShowAddPersonnel(false);
+      alert(
+        `Account created. A password setup email has been sent to ${email}`,
+      );
+    } catch (err: any) {
+      console.error("Failed to add personnel:", err.message);
+      alert(err.message);
+    }
   };
 
-  const handleAddMission = async(newMission: Mission) => {
+  const handleRemovePersonnel = async (id: string) => {
+    try {
+      //remove personel record
+      await deleteDoc(doc(db, "personnel", id));
+      // filter by personnelId and disable user
+      const usersQuery = query(
+        collection(db, "users"),
+        where("personnelId", "==", id),
+      );
+      const snapshot = await getDocs(usersQuery);
+      for (const userDoc of snapshot.docs) {
+        await updateDoc(doc(db, "users", userDoc.id), {
+          disabled: true,
+        });
+      }
+    } catch (err: any) {
+      console.error("Failed to remove personnel:", err.message);
+      alert(err.message);
+    }
+  };
+
+  const handleAddMission = async (newMission: Mission) => {
     await setDoc(doc(db, "missions", newMission.id), newMission);
     setShowAddMission(false);
   };
 
-  const handleRemoveMission = async(id: string) => {
+  const handleRemoveMission = async (id: string) => {
     await deleteDoc(doc(db, "missions", id));
   };
 
   const handleToggleAssign = (missionId: string) => {
-    setAssigningMissionId(prev => prev === missionId ? null : missionId);
+    setAssigningMissionId((prev) => (prev === missionId ? null : missionId));
   };
 
- const handleConfirmAssignment = async (missionId: string, selectedIds: string[]) => {
-  const mission = missions.find(m => m.id === missionId);
-  if (!mission) return;
+  const handleConfirmAssignment = async (
+    missionId: string,
+    selectedIds: string[],
+  ) => {
+    const mission = missions.find((m) => m.id === missionId);
+    if (!mission) return;
 
-  const isFullyAssigned = selectedIds.length >= mission.teamSize;
+    const isFullyAssigned = selectedIds.length >= mission.teamSize;
 
-  try {
-    await updateDoc(doc(db, "missions", missionId), {
-      assignedPersonnel: selectedIds,
-      status: isFullyAssigned ? "inProgress" : "planning",
-    });
-
-    const allAffectedIds = Array.from(new Set([
-      ...selectedIds,
-      ...(mission.assignedPersonnel ?? []),
-    ]));
-
-    for (const personId of allAffectedIds) {
-      const updatedMissionIds = missions
-        .map(m => m.id === missionId
-          ? { ...m, assignedPersonnel: selectedIds }
-          : m
-        )
-        .filter(m => m.assignedPersonnel.includes(personId))
-        .map(m => m.id);
-
-      await updateDoc(doc(db, "personnel", personId), {
-        assignedMissionIds: updatedMissionIds,
+    try {
+      await updateDoc(doc(db, "missions", missionId), {
+        assignedPersonnel: selectedIds,
+        status: isFullyAssigned ? "inProgress" : "planning",
       });
+
+      const allAffectedIds = Array.from(
+        new Set([...selectedIds, ...(mission.assignedPersonnel ?? [])]),
+      );
+
+      for (const personId of allAffectedIds) {
+        const updatedMissionIds = missions
+          .map((m) =>
+            m.id === missionId ? { ...m, assignedPersonnel: selectedIds } : m,
+          )
+          .filter((m) => m.assignedPersonnel.includes(personId))
+          .map((m) => m.id);
+
+        await updateDoc(doc(db, "personnel", personId), {
+          assignedMissionIds: updatedMissionIds,
+        });
+      }
+    } catch (err) {
+      console.error("Assignment failed:", err);
+    } finally {
+      setAssigningMissionId(null);
     }
-  } catch (err) {
-    console.error("Assignment failed:", err); 
-  } finally {
-    setAssigningMissionId(null);
-  }
-};
+  };
 
   // Only planning missions show in the Missions tab
-  const planningMissions = missions.filter(m => m.status === "planning");
+  const planningMissions = missions.filter((m) => m.status === "planning");
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -214,23 +287,34 @@ export default function PersonnelDeploymentPlanner( ) {
 
       <header className="border-b border-gray-200 bg-white shadow-sm">
         <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6 lg:px-8">
-
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">
                 {user?.name?.charAt(0)}
               </div>
               <span className="text-sm font-medium text-gray-700">
-                Welcome, <span className="font-semibold text-gray-900">{user?.name}</span>
+                Welcome,{" "}
+                <span className="font-semibold text-gray-900">
+                  {user?.name}
+                </span>
               </span>
             </div>
             <button
               onClick={handleLogout}
               className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
             >
-              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              <svg
+                className="h-3.5 w-3.5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
               </svg>
               Sign Out
             </button>
@@ -242,7 +326,8 @@ export default function PersonnelDeploymentPlanner( ) {
                 Personnel Deployment Planner
               </h2>
               <p className="mt-0.5 text-sm text-gray-500">
-                Match personnel to missions intelligently while avoiding overwork
+                Match personnel to missions intelligently while avoiding
+                overwork
               </p>
             </div>
             <div className="hidden items-center gap-3 text-sm sm:flex">
@@ -263,7 +348,7 @@ export default function PersonnelDeploymentPlanner( ) {
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <nav className="flex gap-1 overflow-x-auto" aria-label="Tabs">
-            {TABS.map(tab => {
+            {TABS.map((tab) => {
               const isActive = activeTab === tab.key;
               return (
                 <button
@@ -271,9 +356,10 @@ export default function PersonnelDeploymentPlanner( ) {
                   onClick={() => setActiveTab(tab.key)}
                   className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium
                     transition-colors duration-150 focus:outline-none
-                    ${isActive
-                      ? "border-indigo-600 text-indigo-600"
-                      : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                    ${
+                      isActive
+                        ? "border-indigo-600 text-indigo-600"
+                        : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
                     }`}
                   aria-current={isActive ? "page" : undefined}
                 >
@@ -296,7 +382,7 @@ export default function PersonnelDeploymentPlanner( ) {
                   )}
                   {tab.key === "assignedMissions" && (
                     <span className="ml-1 rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-600">
-                      {missions.filter(m => m.status !== "planning").length}
+                      {missions.filter((m) => m.status !== "planning").length}
                     </span>
                   )}
                 </button>
@@ -307,13 +393,21 @@ export default function PersonnelDeploymentPlanner( ) {
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8 flex flex-col gap-6">
-
         {activeTab === "warnings" && (
           <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
             <h2 className="mb-4 flex items-center gap-2 text-base font-bold text-gray-900">
-              <svg className="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                className="h-4 w-4 text-red-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
               Status &amp; Warnings
             </h2>
@@ -325,7 +419,12 @@ export default function PersonnelDeploymentPlanner( ) {
           <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="flex items-center gap-2 text-base font-bold text-gray-900">
-                <svg className="h-4 w-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg
+                  className="h-4 w-4 text-indigo-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <circle cx="12" cy="8" r="4" />
                   <path strokeLinecap="round" d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
                 </svg>
@@ -350,7 +449,7 @@ export default function PersonnelDeploymentPlanner( ) {
               </div>
             )}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {personnel.map(person => (
+              {personnel.map((person) => (
                 <PersonnelCard
                   key={person.id}
                   person={person}
@@ -388,7 +487,7 @@ export default function PersonnelDeploymentPlanner( ) {
             )}
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {planningMissions.map(mission => (
+              {planningMissions.map((mission) => (
                 <div key={mission.id} className="flex flex-col">
                   <MissionCard
                     mission={mission}
@@ -408,7 +507,8 @@ export default function PersonnelDeploymentPlanner( ) {
 
               {planningMissions.length === 0 && (
                 <p className="col-span-2 py-6 text-center text-sm text-gray-400">
-                  All missions have been assigned. Check the Assigned Missions tab.
+                  All missions have been assigned. Check the Assigned Missions
+                  tab.
                 </p>
               )}
             </div>
@@ -418,7 +518,6 @@ export default function PersonnelDeploymentPlanner( ) {
         {activeTab === "assignedMissions" && (
           <AssignedMissionsTab missions={missions} />
         )}
-
       </main>
     </div>
   );
