@@ -112,19 +112,7 @@ export default function AssignedMissionsTab({ missions }: AssignedMissionsTabPro
                 </div>
               </div>
 
-              {/* Assigned personnel */}
-              <div>
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">
-                  Assigned Personnel
-                </p>
-                <div className="flex flex-wrap gap-1">
-                  {mission.assignedPersonnel.map(id => (
-                    <span key={id} className="rounded-md bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-                      {id}
-                    </span>
-                  ))}
-                </div>
-              </div>
+              
             </div>
           ))}
         </div>

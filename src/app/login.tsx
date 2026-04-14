@@ -218,7 +218,7 @@ export default function LoginPage() {
     </div>
   );
 }
-sendPasswordResetEmail()
+
   
 
 

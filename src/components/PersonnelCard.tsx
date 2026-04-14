@@ -39,44 +39,55 @@ export function PersonnelCard({
   
   return (
     <div className={`rounded-xl border p-4 transition-all hover:-translate-y-0.5 hover:shadow-md ${overstreched ? "border-red-200 bg-red-50" : "border-gray-200 bg-white"}`}>
-      {/* Header */}
-      <div className="mb-3 flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-sm font-bold text-indigo-700">
-            {initials}
-          </div>
-          <div>
-            <h3 className="font-semibold text-gray-900">{person.name}</h3>
-            <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${rankColors[person.rank] || "bg-gray-100 text-gray-700"}`}>
-              {person.rank}
-            </span>
-          </div>
-          <button
-          onClick={() => onRemove(person.id)}
-          className="text-gray-400 transition-colors hover:text-red-500"
-          title="Remove personnel"
-        >
-          <svg
-            className="h-5 w-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
-        </div>
-        {overstreched && (
-          <span className="rounded-full border border-red-200 bg-red-100 px-2 py-0.5 text-xs font-bold text-red-600">
-            ⚠ overstreched
-          </span>
-        )}
+  
+  {/* Header */}
+  <div className="mb-3 flex items-start justify-between">
+
+    {/* LEFT SIDE */}
+    <div className="flex items-center gap-3">
+      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-sm font-bold text-indigo-700">
+        {initials}
       </div>
+
+      <div>
+        <h3 className="font-semibold text-gray-900">{person.name}</h3>
+        <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${rankColors[person.rank] || "bg-gray-100 text-gray-700"}`}>
+          {person.rank}
+        </span>
+      </div>
+    </div>
+
+    {/* RIGHT SIDE (actions + status) */}
+    <div className="flex items-center gap-2">
+      
+      {overstreched && (
+        <span className="rounded-full border border-red-200 bg-red-100 px-2 py-0.5 text-xs font-bold text-red-600">
+          ⚠ overstreched
+        </span>
+      )}
+
+      <button
+        onClick={() => onRemove(person.id)}
+        className="rounded-md p-1 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
+        title="Remove personnel"
+      >
+        <svg
+          className="h-5 w-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
+      </button>
+
+    </div>
+  </div>
  
       {/* Skills */}
       <div className="mb-3">
