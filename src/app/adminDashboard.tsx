@@ -13,6 +13,7 @@ import { updateDoc, doc, collection, deleteDoc, setDoc } from "firebase/firestor
 import { db, secondaryAuth } from "../lib/firebase";
 import { onSnapshot } from "firebase/firestore";
 import { createUserWithEmailAndPassword } from "firebase/auth";
+import { sendPasswordResetEmail } from "firebase/auth";
 
 const FontStyle = () => (
   <style>{`
@@ -120,23 +121,30 @@ export default function PersonnelDeploymentPlanner( ) {
 
  const handleAddPersonnel = async (newPerson: Personnel, email:string, password:string) => {
   try{
-    //create use with secondaryauth
+    //create user with secondaryauth
+    password = crypto.randomUUID()
     const result = await createUserWithEmailAndPassword(
       secondaryAuth, email, password
     );
     const userUid = result.user.uid
+
+    //create user account
     await setDoc(doc(db, "users", userUid), {
       name:        newPerson.name,
       role:        "personnel",
       personnelId: newPerson.id
     });
-  
+    
+    //create personnel record
      await setDoc(doc(db, "personnel", newPerson.id), {
       ...newPerson,
       assignedMissionIds: [],
     });
+    await sendPasswordResetEmail(secondaryAuth, email);
 
     setShowAddPersonnel(false);
+    alert(`Account created. A password setup email has been sent to ${email}`)
+
   }catch(err:any){
     console.error("Failed to add personnel:", err.message);
     alert(err.message);
