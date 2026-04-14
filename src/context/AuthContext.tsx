@@ -51,12 +51,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   //login function, route to page based on role
  const login = async (email: string, password: string): Promise<AppUser> => {
-
     const result = await signInWithEmailAndPassword(auth, email, password)
     const userDoc = await getDoc(doc(db, "users", result.user.uid))
     if(!userDoc.exists()) throw new Error("User does not exist")
     
     const data = userDoc.data();
+    //check if disabled and carry out neccessary action
+    if(data.disabled == true){
+      await signOut(auth)
+      throw new Error("Your account has been deactivated. Contact your administrator.")
+    }
+    
     const appUser: AppUser = {
       id:          result.user.uid,
       email:       result.user.email ?? "",
