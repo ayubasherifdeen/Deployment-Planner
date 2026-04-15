@@ -6,6 +6,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { useState, useEffect } from "react";
 import type { Personnel } from "../data/models";
 import { db } from "../lib/firebase";
+import ConfirmationModal from "../components/confirmationModal";
 
 const FontStyle = () => (
   <style>{`
@@ -27,6 +28,7 @@ export default function PersonnelDashboard({
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [myRecord, setMyRecord] = useState<Personnel | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => {
     if (!user?.personnelId) return;
@@ -47,10 +49,17 @@ export default function PersonnelDashboard({
     m.assignedPersonnel.includes(user?.personnelId ?? ""),
   );
 
-  const handleLogout = async () => {
-    await logout();
-    navigate("/app/login");
-  };
+
+//  show confirmation first
+const handleLogout = () => {
+  setShowLogoutConfirm(true);
+};
+//actual logout
+const confirmLogout = async () => {
+  setShowLogoutConfirm(false);
+  await logout();
+  navigate("/app/login");
+};
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -179,6 +188,19 @@ export default function PersonnelDashboard({
           )}
         </section>
       </main>
+      {showLogoutConfirm && (
+      <ConfirmationModal
+        icon="logout"
+        title="Sign out?"
+        body="You will be returned to the login page."
+        warning="Make sure you have noted any important mission details before signing out."
+        confirmLabel="Sign Out"
+        confirmClass="bg-amber-500 hover:bg-amber-600"
+        onConfirm={confirmLogout}
+        onCancel={() => setShowLogoutConfirm(false)} 
+        />
+      )}
+      
     </div>
   );
 }

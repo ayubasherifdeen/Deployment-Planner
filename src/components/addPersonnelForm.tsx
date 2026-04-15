@@ -18,7 +18,7 @@ const COMMON_SKILLS = [
 ];
 
 interface AddPersonnelFormProps {
-  onAdd: (personnel: Personnel, email: string, password: string) => void;
+  onAdd: (personnel: Personnel, email: string) => void;
   onCancel: () => void;
 }
 

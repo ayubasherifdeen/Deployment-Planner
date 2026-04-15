@@ -7,7 +7,7 @@ interface ConfirmationModalProps {
   confirmClass: string; 
   onConfirm:   () => void;
   onCancel:    () => void;
-  icon:        "remove" | "logout" ;
+  icon:        "remove" | "logout";
 }
 
 export default function ConfirmationModal({
