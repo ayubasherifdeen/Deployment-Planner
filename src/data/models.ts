@@ -14,7 +14,7 @@ export type MissionStatus = "planning" | "inProgress" | "completed";
 export interface Mission {
   id: string;
   name: string;
- 
+  objective:string;
   requiredSkills: string[];
   priority: Priority;
   assignedPersonnel:string[]

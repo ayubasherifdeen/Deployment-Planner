@@ -2,7 +2,7 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import PersonnelCard from "../components/PersonnelCard";
 import type { Mission } from "../data/models";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, getDocs, collection } from "firebase/firestore";
 import { useState, useEffect } from "react";
 import type { Personnel } from "../data/models";
 import { db } from "../lib/firebase";
@@ -29,6 +29,17 @@ export default function PersonnelDashboard({
   const navigate = useNavigate();
   const [myRecord, setMyRecord] = useState<Personnel | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [allPersonnel, setAllPersonnel] = useState<Personnel[]>([]);
+
+  useEffect(() => {
+    getDocs(collection(db, "personnel")).then((snapshot) => {
+      const people = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      })) as Personnel[];
+      setAllPersonnel(people);
+    });
+  }, []);
 
   useEffect(() => {
     if (!user?.personnelId) return;
@@ -49,17 +60,16 @@ export default function PersonnelDashboard({
     m.assignedPersonnel.includes(user?.personnelId ?? ""),
   );
 
-
-//  show confirmation first
-const handleLogout = () => {
-  setShowLogoutConfirm(true);
-};
-//actual logout
-const confirmLogout = async () => {
-  setShowLogoutConfirm(false);
-  await logout();
-  navigate("/app/login");
-};
+  //  show confirmation first
+  const handleLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+  //actual logout
+  const confirmLogout = async () => {
+    setShowLogoutConfirm(false);
+    await logout();
+    navigate("/app/login");
+  };
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -155,6 +165,8 @@ const confirmLogout = async () => {
                         {mission.priority} Priority
                       </span>
                     </div>
+                    
+                   
 
                     {/* Completed badge or Mark Complete button */}
                     {mission.status === "completed" ? (
@@ -182,6 +194,52 @@ const confirmLogout = async () => {
                       </span>
                     ))}
                   </div>
+                   {/* ── Teammates — who else is on this mission ── */}
+                    {mission.assignedPersonnel.length > 1 && (
+                      <div className="mt-3 border-t border-gray-100 pt-3">
+                        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                          Your Team
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {mission.assignedPersonnel
+                            // exclude the logged-in person themselves
+                            .filter((pid) => pid !== user?.personnelId)
+                            .map((pid) => {
+                              const teammate = allPersonnel.find(
+                                (p) => p.id === pid,
+                              );
+                              const name = teammate?.name ?? "Unknown";
+                              const initials = name
+                                .split(" ")
+                                .map((n) => n[0])
+                                .slice(0, 2)
+                                .join("");
+
+                              return (
+                                <div
+                                  key={pid}
+                                  className="flex items-center gap-1.5"
+                                >
+                                  {/* Small avatar circle */}
+                                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">
+                                    {initials}
+                                  </div>
+                                  <div>
+                                    <span className="text-xs font-semibold text-gray-700">
+                                      {name}
+                                    </span>
+                                    {teammate?.rank && (
+                                      <span className="ml-1 text-xs text-gray-400">
+                                        {teammate.rank}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                        </div>
+                      </div>
+                    )}
                 </div>
               ))}
             </div>
@@ -189,18 +247,17 @@ const confirmLogout = async () => {
         </section>
       </main>
       {showLogoutConfirm && (
-      <ConfirmationModal
-        icon="logout"
-        title="Sign out?"
-        body="You will be returned to the login page."
-        warning="Make sure you have noted any important mission details before signing out."
-        confirmLabel="Sign Out"
-        confirmClass="bg-amber-500 hover:bg-amber-600"
-        onConfirm={confirmLogout}
-        onCancel={() => setShowLogoutConfirm(false)} 
+        <ConfirmationModal
+          icon="logout"
+          title="Sign out?"
+          body="You will be returned to the login page."
+          warning="Make sure you have noted any important mission details before signing out."
+          confirmLabel="Sign Out"
+          confirmClass="bg-amber-500 hover:bg-amber-600"
+          onConfirm={confirmLogout}
+          onCancel={() => setShowLogoutConfirm(false)}
         />
       )}
-      
     </div>
   );
 }

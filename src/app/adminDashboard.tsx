@@ -2,6 +2,7 @@ import PersonnelCard from "../components/PersonnelCard";
 import MissionCard from "../components/MissionCard";
 import AssignmentPanel from "../components/assignmentPanel";
 import AssignedMissionsTab from "./assignedMissionsTab";
+import SearchInput from "../components/search";
 import { useState, useEffect } from "react";
 import type { Mission, Personnel } from "../data/models";
 import { WarningPanel } from "../components/WarningPanel";
@@ -120,13 +121,14 @@ export default function PersonnelDeploymentPlanner() {
   const [activeTab, setActiveTab] = useState<TabKey>("warnings");
   const [showAddPersonnel, setShowAddPersonnel] = useState(false);
   const [showAddMission, setShowAddMission] = useState(false);
+  const [search, setSearch] = useState("");
   const [assigningMissionId, setAssigningMissionId] = useState<string | null>(
     null,
   );
   const [confirmModal, setConfirmModal] = useState<{
     type: "removePersonnel" | "logout" | "removeMission";
     personnelId?: string;
-    missionId?:string;
+    missionId?: string;
     name?: string;
   } | null>(null);
 
@@ -186,7 +188,7 @@ export default function PersonnelDeploymentPlanner() {
   ) => {
     try {
       //create user with secondaryauth
-      password = crypto.randomUUID();
+
       const result = await createUserWithEmailAndPassword(
         secondaryAuth,
         email,
@@ -245,6 +247,22 @@ export default function PersonnelDeploymentPlanner() {
       for (const userDoc of snapshot.docs) {
         await updateDoc(doc(db, "users", userDoc.id), { disabled: true });
       }
+      const assignedMissions = missions.filter((m) =>
+        m.assignedPersonnel.includes(id),
+      );
+
+      for (const mission of assignedMissions) {
+        await updateDoc(doc(db, "missions", mission.id), {
+          assignedPersonnel: mission.assignedPersonnel.filter(
+            (pid) => pid !== id,
+          ),
+          //revert to planning if it drops below teamSize
+          status:
+            mission.assignedPersonnel.length - 1 < mission.teamSize
+              ? "planning"
+              : mission.status,
+        });
+      }
     } catch (err: any) {
       console.error("Failed to remove personnel:", err.message);
       alert(err.message);
@@ -256,31 +274,46 @@ export default function PersonnelDeploymentPlanner() {
     setShowAddMission(false);
   };
 
-  
+  //show confirmation first
+  const handleRemoveMission = (id: string) => {
+    const mission = missions.find((m) => m.id === id);
+    setConfirmModal({
+      type: "removeMission",
+      missionId: id,
+      name: mission?.name ?? "this mission",
+    });
+  };
 
-//show confirmation first
-const handleRemoveMission = (id: string) => {
-  const mission = missions.find(m => m.id === id);
-  setConfirmModal({
-    type:      "removeMission",
-    missionId: id,
-    name:      mission?.name ?? "this mission",
-  });
-};
+  // Actual delete
+  const confirmRemoveMission = async () => {
+    if (!confirmModal?.missionId) return;
+    const id = confirmModal.missionId;
+    setConfirmModal(null);
 
-// Actual delete 
-const confirmRemoveMission = async () => {
-  if (!confirmModal?.missionId) return;
-  const id = confirmModal.missionId;
-  setConfirmModal(null);
+    try {
+      //find and delete mission
+      const mission = missions.find((m) => m.id === id);
+      await deleteDoc(doc(db, "missions", id));
+      //check for assigned personnels
+      if (mission && mission.assignedPersonnel.length > 0) {
+        for (const personId of mission.assignedPersonnel) {
+          const person = personnel.find((p) => p.id === personId);
+          if (!person) continue;
 
-  try {
-    await deleteDoc(doc(db, "missions", id));
-  } catch (err: any) {
-    console.error("Failed to remove mission:", err.message);
-    alert(err.message);
-  }
-};
+          const updatedMissionIds = person.assignedMissionIds.filter(
+            (mId) => mId !== id,
+          );
+
+          await updateDoc(doc(db, "personnel", personId), {
+            assignedMissionIds: updatedMissionIds,
+          });
+        }
+      }
+    } catch (err: any) {
+      console.error("Failed to remove mission:", err.message);
+      alert(err.message);
+    }
+  };
 
   const handleToggleAssign = (missionId: string) => {
     setAssigningMissionId((prev) => (prev === missionId ? null : missionId));
@@ -327,124 +360,131 @@ const confirmRemoveMission = async () => {
   // Only planning missions show in the Missions tab
   const planningMissions = missions.filter((m) => m.status === "planning");
 
+  const filteredPersonnel = personnel.filter((p) =>
+  p.name.toLowerCase().includes(search.toLowerCase())
+);
+
+const filteredMissions = missions.filter((m) =>
+  m.status === "planning" &&
+  m.name.toLowerCase().includes(search.toLowerCase())
+);   
+
   return (
     <div className="min-h-screen bg-gray-100">
       <FontStyle />
 
       <header className="border-b border-gray-200 bg-white shadow-sm">
-  <div className="mx-auto max-w-5xl px-4 py-3 sm:px-6 lg:px-8">
-    
-    {/* Top row */}
-    <div className="mb-2 flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-[11px] font-bold text-indigo-700">
-          {user?.name?.charAt(0)}
+        <div className="mx-auto max-w-5xl px-4 py-3 sm:px-6 lg:px-8">
+          {/* Top row */}
+          <div className="mb-2 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-[11px] font-bold text-indigo-700">
+                {user?.name?.charAt(0)}
+              </div>
+              <span className="text-xs font-medium text-gray-700">
+                Welcome,{" "}
+                <span className="font-semibold text-gray-900">
+                  {user?.name}
+                </span>
+              </span>
+            </div>
+
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1 rounded-md border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-gray-600 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+            >
+              <svg
+                className="h-3 w-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
+              </svg>
+              Sign Out
+            </button>
+          </div>
+
+          {/* Title row */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-display text-lg font-bold text-gray-900">
+                Personnel Deployment Planner
+              </h2>
+              <p className="mt-0.5 text-xs text-gray-500">
+                Match personnel to missions intelligently
+              </p>
+            </div>
+
+            <div className="hidden items-center gap-2 text-xs sm:flex">
+              <span className="flex items-center gap-1 rounded-full bg-indigo-100 px-2 py-0.5 text-[15px] font-semibold text-indigo-700">
+                👤 {personnel.length}
+              </span>
+
+              <span className="flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[15px] font-semibold text-gray-600">
+                🎯 {missions.length}
+              </span>
+
+              {overstrechedCount > 0 && (
+                <span className="flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[15px] font-semibold text-red-600">
+                  ⚠ {overstrechedCount}
+                </span>
+              )}
+            </div>
+          </div>
         </div>
-        <span className="text-xs font-medium text-gray-700">
-          Welcome,{" "}
-          <span className="font-semibold text-gray-900">
-            {user?.name}
-          </span>
-        </span>
-      </div>
 
-      <button
-        onClick={handleLogout}
-        className="flex items-center gap-1 rounded-md border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-gray-600 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-      >
-        <svg
-          className="h-3 w-3"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-          />
-        </svg>
-        Sign Out
-      </button>
-    </div>
-
-    {/* Title row */}
-    <div className="flex items-center justify-between">
-      <div>
-        <h2 className="font-display text-lg font-bold text-gray-900">
-          Personnel Deployment Planner
-        </h2>
-        <p className="mt-0.5 text-xs text-gray-500">
-          Match personnel to missions intelligently
-        </p>
-      </div>
-
-      <div className="hidden items-center gap-2 text-xs sm:flex">
-        <span className="flex items-center gap-1 rounded-full bg-indigo-100 px-2 py-0.5 text-[15px] font-semibold text-indigo-700">
-  👤 {personnel.length}
-</span>
-
-<span className="flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[15px] font-semibold text-gray-600">
-  🎯 {missions.length}
-</span>
-
-{overstrechedCount > 0 && (
-  <span className="flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[15px] font-semibold text-red-600">
-    ⚠ {overstrechedCount}
-  </span>
-)}
-  
-      </div>
-    </div>
-  </div>
-
-  {/* Tabs */}
-  <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-    <nav className="flex gap-1 overflow-x-auto" aria-label="Tabs">
-      {TABS.map((tab) => {
-        const isActive = activeTab === tab.key;
-        return (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2 text-xs font-medium
+        {/* Tabs */}
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <nav className="flex gap-1 overflow-x-auto" aria-label="Tabs">
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2 text-xs font-medium
               transition-colors duration-150 focus:outline-none
               ${
                 isActive
                   ? "border-indigo-600 text-indigo-600"
                   : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
               }`}
-            aria-current={isActive ? "page" : undefined}
-          >
-            {tab.icon}
-            {tab.label}
-            {tab.key === "warnings" && overstrechedCount > 0 && (
-              <span className="ml-1 rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-600">
-                {overstrechedCount}
-              </span>
-            )}
-            {tab.key === "personnel" && (
-              <span className="ml-1 rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-600">
-                {personnel.length}
-              </span>
-            )}
-            {tab.key === "missions" && (
-              <span className="ml-1 rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-600">
-                {planningMissions.length}
-              </span>
-            )}
-            {tab.key === "assignedMissions" && (
-              <span className="ml-1 rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-600">
-                {missions.filter((m) => m.status !== "planning").length}
-              </span>
-            )}
-          </button>
-        );
-      })}
-    </nav>
-  </div>
-</header>
+                  aria-current={isActive ? "page" : undefined}
+                >
+                  {tab.icon}
+                  {tab.label}
+                  {tab.key === "warnings" && overstrechedCount > 0 && (
+                    <span className="ml-1 rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-600">
+                      {overstrechedCount}
+                    </span>
+                  )}
+                  {tab.key === "personnel" && (
+                    <span className="ml-1 rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-600">
+                      {personnel.length}
+                    </span>
+                  )}
+                  {tab.key === "missions" && (
+                    <span className="ml-1 rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-600">
+                      {planningMissions.length}
+                    </span>
+                  )}
+                  {tab.key === "assignedMissions" && (
+                    <span className="ml-1 rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-600">
+                      {missions.filter((m) => m.status !== "planning").length}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+      </header>
 
       <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8 flex flex-col gap-6">
         {activeTab === "warnings" && (
@@ -470,52 +510,73 @@ const confirmRemoveMission = async () => {
         )}
 
         {activeTab === "personnel" && (
-          <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="flex items-center gap-2 text-base font-bold text-gray-900">
-                <svg
-                  className="h-4 w-4 text-indigo-500"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <circle cx="12" cy="8" r="4" />
-                  <path strokeLinecap="round" d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-                </svg>
-                Personnel
-              </h2>
-              <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-600">
-                {personnel.length} units
-              </span>
-              <button
-                className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-                onClick={() => setShowAddPersonnel(true)}
-              >
-                + Add
-              </button>
+          <section>
+            <div className="mb-3">
+              <SearchInput
+                value={search}
+                onChange={setSearch}
+                placeholder="Search personnel..."
+              />
             </div>
-            {showAddPersonnel && (
-              <div className="mb-4">
-                <AddPersonnelForm
-                  onAdd={handleAddPersonnel}
-                  onCancel={() => setShowAddPersonnel(false)}
-                />
+            
+            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="flex items-center gap-2 text-base font-bold text-gray-900">
+                  <svg
+                    className="h-4 w-4 text-indigo-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle cx="12" cy="8" r="4" />
+                    <path
+                      strokeLinecap="round"
+                      d="M4 20c0-4 3.6-7 8-7s8 3 8 7"
+                    />
+                  </svg>
+                  Personnel
+                </h2>
+                <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-600">
+                  {personnel.length} units
+                </span>
+                <button
+                  className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+                  onClick={() => setShowAddPersonnel(true)}
+                >
+                  + Add
+                </button>
               </div>
-            )}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {personnel.map((person) => (
-                <PersonnelCard
-                  key={person.id}
-                  person={person}
-                  onRemove={handleRemovePersonnel}
-                />
-              ))}
+              {showAddPersonnel && (
+                <div className="mb-4">
+                  <AddPersonnelForm
+                    onAdd={handleAddPersonnel}
+                    onCancel={() => setShowAddPersonnel(false)}
+                  />
+                </div>
+              )}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {filteredPersonnel.map((person) => (
+  <PersonnelCard
+    key={person.id}
+    person={person}
+    onRemove={handleRemovePersonnel}
+  />
+))}
+              </div>
             </div>
           </section>
         )}
 
         {activeTab === "missions" && (
-          <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <section>
+             <div className="mb-3">
+              <SearchInput
+                value={search}
+                onChange={setSearch}
+                placeholder="Search mission..."
+              />
+            </div>
+          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="flex items-center gap-2 text-base font-bold text-gray-900">
                 Missions
@@ -541,7 +602,7 @@ const confirmRemoveMission = async () => {
             )}
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {planningMissions.map((mission) => (
+              {filteredMissions.map((mission) => (
                 <div key={mission.id} className="flex flex-col">
                   <MissionCard
                     mission={mission}
@@ -566,11 +627,13 @@ const confirmRemoveMission = async () => {
                 </p>
               )}
             </div>
+          </div>
           </section>
         )}
+        
 
         {activeTab === "assignedMissions" && (
-          <AssignedMissionsTab missions={missions} />
+          <AssignedMissionsTab missions={missions} personnel={personnel} />
         )}
       </main>
       {/* Confirmation modal — renders on top of everything when active */}
@@ -600,17 +663,17 @@ const confirmRemoveMission = async () => {
         />
       )}
       {confirmModal?.type === "removeMission" && (
-  <ConfirmationModal
-    icon="remove"
-    title={`Remove ${confirmModal.name}?`}
-    body={`This will permanently delete ${confirmModal.name} from the system.`}
-    warning="Any personnel currently assigned to this mission will lose their assignment. This cannot be undone."
-    confirmLabel="Remove Mission"
-    confirmClass="bg-red-600 hover:bg-red-700"
-    onConfirm={confirmRemoveMission}
-    onCancel={() => setConfirmModal(null)}
-  />
-)}
+        <ConfirmationModal
+          icon="remove"
+          title={`Remove ${confirmModal.name}?`}
+          body={`This will permanently delete ${confirmModal.name} from the system.`}
+          warning="Any personnel currently assigned to this mission will lose their assignment. This cannot be undone."
+          confirmLabel="Remove Mission"
+          confirmClass="bg-red-600 hover:bg-red-700"
+          onConfirm={confirmRemoveMission}
+          onCancel={() => setConfirmModal(null)}
+        />
+      )}
     </div>
   );
 }

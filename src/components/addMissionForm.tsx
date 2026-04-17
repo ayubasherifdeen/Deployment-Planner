@@ -17,6 +17,7 @@ export function AddMissionForm({ onCancel, onAdd }: AddMissionFormProps) {
   const [priority, setPriority]             = useState<Priority>("Medium");
   const [requiredSkills, setRequiredSkills]  = useState<string[]>([]);
   const [teamSize, setTeamSize]             = useState(2);
+  const [missionObj, setMissionObj] = useState("");
 
 
   const PRIORITIES: Priority[] = ["Low", "Medium", "High"];
@@ -34,6 +35,7 @@ export function AddMissionForm({ onCancel, onAdd }: AddMissionFormProps) {
     onAdd({
       id:                crypto.randomUUID(),
       name:              name.trim(),
+      objective: missionObj,
       priority,
       requiredSkills,
       assignedPersonnel: [], // always starts empty
@@ -68,6 +70,16 @@ export function AddMissionForm({ onCancel, onAdd }: AddMissionFormProps) {
         >
           {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
+      </div>
+      <div className="mb-4">
+        <label className="mb-1 block text-sm font-medium text-gray-700">Mission Objective</label>
+        <textarea
+          value={missionObj}
+          onChange={e => setMissionObj(e.target.value)}
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          placeholder="Briefly describe mission objective..."
+          required
+        />
       </div>
 
       <div className="mb-4">

@@ -57,9 +57,7 @@ export function PersonnelCard({
       </div>
     </div>
 
-    {/* RIGHT SIDE (actions + status) */}
     <div className="flex items-center gap-2">
-      
       {overstreched && (
         <span className="rounded-full border border-red-200 bg-red-100 px-2 py-0.5 text-xs font-bold text-red-600">
           ⚠ overstreched
