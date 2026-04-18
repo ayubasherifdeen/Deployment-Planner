@@ -23,7 +23,8 @@ interface AddPersonnelFormProps {
 }
 
 export function AddPersonnelForm({ onCancel, onAdd }: AddPersonnelFormProps) {
-  const [name, setName] = useState("");
+  const [fName, setFName] = useState("");
+  const [ lName, setLName] = useState("");
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [rank, setRank] = useState<Rank>("Private");
   const [email, setEmail] = useState("");
@@ -35,20 +36,21 @@ export function AddPersonnelForm({ onCancel, onAdd }: AddPersonnelFormProps) {
     );
   };
 
-  // Bug fix: was React.SubmitEvent which doesn't exist — correct type is React.FormEvent
   const handleSubmit = (e: React.FormEvent) => {
+    const name = lName.trim() + " " + fName.trim()
     e.preventDefault();
     if (!name.trim() || selectedSkills.length === 0) return;
 
     onAdd(
       {
         id: crypto.randomUUID(),
-        name: name.trim(),
+        name: name,
         rank,
         skills: selectedSkills,
         assignedMissionIds: [], // always starts empty — gets populated via assignment
       },
       email.trim(),
+      crypto.randomUUID()
       
     );
   };
@@ -62,26 +64,45 @@ export function AddPersonnelForm({ onCancel, onAdd }: AddPersonnelFormProps) {
         Add New Personnel
       </h3>
 
-      <div className="mb-4">
-        <label className="mb-1 block text-sm font-medium text-gray-700">
-          Name
-        </label>
-        <input
-          type="text"
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          placeholder="Enter name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
-      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+  
+  {/* Name */}
+  <div className="mb-4">
+    <label className="mb-1 block text-sm font-medium text-gray-700">
+      First Name
+    </label>
+    <input
+      type="text"
+      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+      placeholder="Enter first name"
+      value={fName}
+      onChange={(e) => setFName(e.target.value)}
+      required
+    />
+  </div>
+
+  <div>
+    <label className="mb-1 block text-sm font-medium text-gray-700">
+      Last Name
+    </label>
+    <input
+      type="text"
+      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+      placeholder="Enter last name"
+      value={lName}
+      onChange={(e) => setLName(e.target.value)}
+      required
+    />
+  </div>
+
+</div>
 
       <div className="mb-4">
         <label className="mb-1 block text-sm font-medium text-gray-700">
           Rank
         </label>
         <select
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="w-1/4 rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           onChange={(e) => setRank(e.target.value as Rank)}
           value={rank}
         >

@@ -80,143 +80,187 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100">
-      <FontStyle />
-      <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
+  <FontStyle />
 
-        {!showReset ? (
-          // ── Login form ──
-          <>
-            <h1 className="mb-1 text-xl font-bold text-gray-900">Deployment Planner</h1>
-            <p className="mb-6 text-sm text-gray-500">Sign in to your account</p>
+  <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <div>
-                <label htmlFor="email"
-                  className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Email
-                  <input
-                    type="email" id="email" name="email"
-                    value={email} onChange={e => setEmail(e.target.value)}
-                    required autoComplete="on"
-                    placeholder="you@deployforce.com"
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-normal focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </label>
-              </div>
+    {!showReset ? (
+      <>
+        {/* Title */}
+        <h1 className="mb-1 text-lg font-bold text-gray-900">
+          Deployment Planner
+        </h1>
+        <p className="mb-5 text-xs text-gray-500">
+          Sign in to your account
+        </p>
 
-              <div>
-                <label htmlFor="password"
-                  className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Password
-                  <input
-                    type="password" id="password" name="password"
-                    value={password} onChange={e => setPassword(e.target.value)}
-                    required autoComplete="on"
-                    placeholder="******"
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-normal focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </label>
-              </div>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
 
-              {error && (
-                <p className="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-600">
-                  {error}
-                </p>
-              )}
+          {/* Email */}
+          <div>
+            <label
+              htmlFor="email"
+              className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-gray-500"
+            >
+              Email
+            </label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="on"
+              placeholder="you@deployforce.com"
+              className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            />
+          </div>
 
-              <button type="submit" disabled={loading}
-                className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60">
-                {loading ? "Signing in..." : "Sign In"}
-              </button>
+          {/* Password */}
+          <div>
+            <label
+              htmlFor="password"
+              className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-gray-500"
+            >
+              Password
+            </label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              autoComplete="on"
+              placeholder="******"
+              className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            />
+          </div>
 
-              {/* Forgot password link */}
-              <button
-                type="button"
-                onClick={() => {
-                  setShowReset(true);
-                  setResetEmail(email); // pre-fill with whatever they typed
-                  setError("");
-                }}
-                className="text-center text-xs text-indigo-600 hover:underline"
-              >
-                Forgot your password?
-              </button>
-            </form>
-          </>
-        ) : (
-          // ── Reset form ──
-          <>
+          {/* Error */}
+          {error && (
+            <p className="rounded-md bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600">
+              {error}
+            </p>
+          )}
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {loading ? "Signing in..." : "Sign In"}
+          </button>
+
+          {/* Forgot */}
+          <button
+            type="button"
+            onClick={() => {
+              setShowReset(true);
+              setResetEmail(email);
+              setError("");
+            }}
+            className="text-center text-[15px] text-indigo-600 hover:underline"
+          >
+            Forgot your password?
+          </button>
+        </form>
+      </>
+    ) : (
+      <>
+        {/* Back */}
+        <button
+          onClick={() => {
+            setShowReset(false);
+            setResetStatus("idle");
+            setResetMessage("");
+          }}
+          className="mb-3 flex items-center gap-1 text-[15px] font-semibold text-gray-500 hover:text-gray-700"
+        >
+          <svg
+            className="h-3 w-3"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+          Back to login
+        </button>
+
+        {/* Title */}
+        <h1 className="mb-1 text-lg font-bold text-gray-900">
+          Reset Password
+        </h1>
+        <p className="mb-5 text-xs text-gray-500">
+          Enter your email to receive a reset link
+        </p>
+
+        {resetStatus === "success" ? (
+          <div className="flex flex-col gap-3">
+            <div className="rounded-md bg-green-50 px-3 py-2 text-xs text-green-700">
+              {resetMessage}
+            </div>
+
             <button
               onClick={() => {
                 setShowReset(false);
                 setResetStatus("idle");
                 setResetMessage("");
               }}
-              className="mb-4 flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-gray-700"
+              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
             >
-              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M15 19l-7-7 7-7" />
-              </svg>
-              Back to login
+              Back to Login
             </button>
+          </div>
+        ) : (
+          <form onSubmit={handleReset} className="flex flex-col gap-3">
+            
+            <div>
+              <label
+                htmlFor="resetEmail"
+                className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-gray-500"
+              >
+                Email
+              </label>
+              <input
+                type="email"
+                id="resetEmail"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                required
+                placeholder="you@deployforce.com"
+                className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              />
+            </div>
 
-            <h1 className="mb-1 text-xl font-bold text-gray-900">Reset Password</h1>
-            <p className="mb-6 text-sm text-gray-500">
-              Enter your email and we'll send you a reset link.
-            </p>
-
-            {resetStatus === "success" ? (
-              // Success state — show message and back button
-              <div className="flex flex-col gap-4">
-                <div className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
-                  {resetMessage}
-                </div>
-                <button
-                  onClick={() => {
-                    setShowReset(false);
-                    setResetStatus("idle");
-                    setResetMessage("");
-                  }}
-                  className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700"
-                >
-                  Back to Login
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleReset} className="flex flex-col gap-4">
-                <div>
-                  <label htmlFor="resetEmail"
-                    className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    Email
-                    <input
-                      type="email" id="resetEmail"
-                      value={resetEmail} onChange={e => setResetEmail(e.target.value)}
-                      required
-                      placeholder="you@deployforce.com"
-                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-normal focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </label>
-                </div>
-
-                {resetStatus === "error" && (
-                  <p className="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-600">
-                    {resetMessage}
-                  </p>
-                )}
-
-                <button type="submit" disabled={resetLoading}
-                  className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60">
-                  {resetLoading ? "Sending..." : "Send Reset Link"}
-                </button>
-              </form>
+            {resetStatus === "error" && (
+              <p className="rounded-md bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600">
+                {resetMessage}
+              </p>
             )}
-          </>
-        )}
 
-      </div>
-    </div>
-  );
+            <button
+              type="submit"
+              disabled={resetLoading}
+              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {resetLoading ? "Sending..." : "Send Reset Link"}
+            </button>
+          </form>
+        )}
+      </>
+    )}
+  </div>
+</div>
+)
 }
 
   
