@@ -19,8 +19,11 @@ import {
   setDoc,
   query,
   where,
+  orderBy,
+  limit
 } from "firebase/firestore";
 import { db, secondaryAuth } from "../lib/firebase";
+import { logActivity } from "../lib/activityLog";
 import { onSnapshot } from "firebase/firestore";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { sendPasswordResetEmail } from "firebase/auth";
@@ -34,7 +37,7 @@ const FontStyle = () => (
   `}</style>
 );
 
-type TabKey = "warnings" | "personnel" | "missions" | "assignedMissions";
+type TabKey = "warnings" | "personnel" | "missions" | "assignedMissions" | "activityLog";
 
 const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   {
@@ -113,6 +116,16 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
       </svg>
     ),
   },
+  {
+  key: "activityLog",
+  label: "Activity Log",
+  icon: (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+    </svg>
+  ),
+},
 ];
 
 export default function PersonnelDeploymentPlanner() {
@@ -134,6 +147,7 @@ export default function PersonnelDeploymentPlanner() {
 
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [activityLog, setActivityLog] = useState<any[]>([])
 
   const overstrechedCount = personnel.filter(
     (p) => p.assignedMissionIds.length >= 3,
@@ -171,12 +185,40 @@ export default function PersonnelDeploymentPlanner() {
     return unsub;
   }, []);
 
+  useEffect(() => {
+  const q = query(
+    collection(db, "activityLog"),
+    orderBy("timestamp", "desc"),
+    limit(50) // only fetch the 50 most recent entries
+  );
+
+  const unsub = onSnapshot(q, snapshot => {
+    const logs = snapshot.docs.map(d => ({
+      id: d.id,
+      ...d.data(),
+    }));
+    setActivityLog(logs);
+  });
+
+  return unsub;
+}, []);
+
   const handleLogout = async () => {
     setConfirmModal({ type: "logout" });
   };
 
   const confirmLogout = async () => {
     setConfirmModal(null);
+    //activity log
+    await logActivity({
+    action:      "admin_logout",
+    category:    "auth",
+    description: `${user?.name} signed out`,
+    actorId:     user?.id ?? "",
+    actorName:   user?.name ?? "",
+    actorRole:   "admin",
+    targetName:  user?.name ?? "",
+  });
     await logout();
     navigate("/app/login");
   };
@@ -210,6 +252,18 @@ export default function PersonnelDeploymentPlanner() {
       });
       await sendPasswordResetEmail(secondaryAuth, email);
 
+      //log activity
+      await logActivity({
+      action:      "personnel_added",
+      category:    "personnel",
+      description: `${user?.name} added ${newPerson.name} to the system`,
+      actorId:     user?.id ?? "",
+      actorName:   user?.name ?? "",
+      actorRole:   "admin",
+      targetName:  newPerson.name,
+      metadata:    { rank: newPerson.rank, email },
+    });
+
       setShowAddPersonnel(false);
       alert(
         `Account created. A password setup email has been sent to ${email}`,
@@ -233,6 +287,7 @@ export default function PersonnelDeploymentPlanner() {
   const confirmRemovePersonnel = async () => {
     if (!confirmModal?.personnelId) return;
     const id = confirmModal.personnelId;
+    const name = confirmModal.name ?? "Unknown";
     setConfirmModal(null);
 
     try {
@@ -263,6 +318,18 @@ export default function PersonnelDeploymentPlanner() {
               : mission.status,
         });
       }
+
+      //log activity
+      await logActivity({
+      action:      "personnel_removed",
+      category:    "personnel",
+      description: `${user?.name} removed ${name} from the system`,
+      actorId:     user?.id ?? "",
+      actorName:   user?.name ?? "",
+      actorRole:   "admin",
+      targetName:  name,
+      metadata:    { personnelId:id},
+    });
     } catch (err: any) {
       console.error("Failed to remove personnel:", err.message);
       alert(err.message);
@@ -271,6 +338,20 @@ export default function PersonnelDeploymentPlanner() {
 
   const handleAddMission = async (newMission: Mission) => {
     await setDoc(doc(db, "missions", newMission.id), newMission);
+    await logActivity({
+    action:      "mission_created",
+    category:    "mission",
+    description: `${user?.name} created mission "${newMission.name}"`,
+    actorId:     user?.id ?? "",
+    actorName:   user?.name ?? "",
+    actorRole:   "admin",
+    targetName:  newMission.name,
+    metadata:    {
+      priority:       newMission.priority,
+      teamSize:       newMission.teamSize,
+      requiredSkills: newMission.requiredSkills,
+    },
+  })
     setShowAddMission(false);
   };
 
@@ -282,12 +363,16 @@ export default function PersonnelDeploymentPlanner() {
       missionId: id,
       name: mission?.name ?? "this mission",
     });
+
+    //activity log
+    
   };
 
   // Actual delete
   const confirmRemoveMission = async () => {
     if (!confirmModal?.missionId) return;
     const id = confirmModal.missionId;
+    const name = confirmModal.name ?? "Unknown";
     setConfirmModal(null);
 
     try {
@@ -309,6 +394,21 @@ export default function PersonnelDeploymentPlanner() {
           });
         }
       }
+
+      //log activity
+      await logActivity({
+      action:      "mission_removed",
+      category:    "mission",
+      description: `${user?.name} removed mission "${name}"`,
+      actorId:     user?.id ?? "",
+      actorName:   user?.name ?? "",
+      actorRole:   "admin",
+      targetName:  name,
+      metadata:    {
+        missionId:         id,
+        assignedPersonnel: mission?.assignedPersonnel ?? [],
+      },
+    });
     } catch (err: any) {
       console.error("Failed to remove mission:", err.message);
       alert(err.message);
@@ -350,6 +450,24 @@ export default function PersonnelDeploymentPlanner() {
           assignedMissionIds: updatedMissionIds,
         });
       }
+      const assignedNames = selectedIds
+    .map(pid => personnel.find(p => p.id === pid)?.name ?? pid)
+    .join(", ");
+      //log activity
+       await logActivity({
+    action:      "personnel_assigned",
+    category:    "mission",
+    description: `${user?.name} assigned ${assignedNames} to "${mission.name}"`,
+    actorId:     user?.id ?? "",
+    actorName:   user?.name ?? "",
+    actorRole:   "admin",
+    targetName:  mission.name,
+    metadata:    {
+      missionId:     missionId,
+      assignedIds:   selectedIds,
+      isFullyAssigned,
+    },
+  });
     } catch (err) {
       console.error("Assignment failed:", err);
     } finally {
@@ -635,6 +753,51 @@ const filteredMissions = missions.filter((m) =>
         {activeTab === "assignedMissions" && (
           <AssignedMissionsTab missions={missions} personnel={personnel} />
         )}
+        {activeTab === "activityLog" && (
+  <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+    <h2 className="mb-4 text-base font-bold text-gray-900">Activity Log</h2>
+
+    {activityLog.length === 0 ? (
+      <p className="py-6 text-center text-sm text-gray-400">
+        No activity recorded yet.
+      </p>
+    ) : (
+      <div className="flex flex-col divide-y divide-gray-100">
+        {activityLog.map(entry => {
+          const categoryColors: Record<string, string> = {
+            personnel: "bg-indigo-100 text-indigo-700",
+            mission:   "bg-blue-100 text-blue-700",
+            auth:      "bg-gray-100 text-gray-600",
+          };
+
+          // Format the Firestore timestamp
+          const time = entry.timestamp?.toDate
+            ? entry.timestamp.toDate().toLocaleString()
+            : "—";
+
+          return (
+            <div key={entry.id} className="flex items-start gap-3 py-3">
+              {/* Category pill */}
+              <span className={`mt-0.5 flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-bold
+                ${categoryColors[entry.category] ?? "bg-gray-100 text-gray-600"}`}>
+                {entry.category}
+              </span>
+
+              <div className="flex-1 min-w-0">
+                {/* Description */}
+                <p className="text-sm text-gray-800">{entry.description}</p>
+                {/* Actor and time */}
+                <p className="mt-0.5 text-xs text-gray-400">
+                  {time}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    )}
+  </section>
+)}
       </main>
       {/* Confirmation modal — renders on top of everything when active */}
       {confirmModal?.type === "logout" && (

@@ -6,6 +6,7 @@ import { doc, getDoc, getDocs, collection } from "firebase/firestore";
 import { useState, useEffect } from "react";
 import type { Personnel } from "../data/models";
 import { db } from "../lib/firebase";
+import { logActivity } from "../lib/activityLog";
 import ConfirmationModal from "../components/confirmationModal";
 
 const FontStyle = () => (
@@ -119,6 +120,15 @@ export default function PersonnelDashboard({
   //actual logout
   const confirmLogout = async () => {
     setShowLogoutConfirm(false);
+    await logActivity({
+    action:      "personnel_logout",
+    category:    "auth",
+    description: `${user?.name} signed out`,
+    actorId:     user?.id ?? "",
+    actorName:   user?.name ?? "",
+    actorRole:   "personnel",
+    targetName:  user?.name ?? "",
+  });
     await logout();
     navigate("/app/login");
   };
@@ -350,7 +360,8 @@ export default function PersonnelDashboard({
             </div>
           )}
         </section>
-        )}</main>
+        )}
+        </main>
       {showLogoutConfirm && (
         <ConfirmationModal
           icon="logout"

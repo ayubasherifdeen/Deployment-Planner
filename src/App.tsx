@@ -8,6 +8,8 @@ import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore'
 import { db } from './lib/firebase'
+import { logActivity } from './lib/activityLog'
+
 
 
 
@@ -46,6 +48,7 @@ function ProtectedRoute({
 export default function App() {
   const [missions, setMissions] = useState<Mission[]>([])
   const [missionsLoading, setMissionsLoading] = useState(true);
+  const { user }=useAuth()
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "missions"), snapshot => {
@@ -63,6 +66,18 @@ export default function App() {
     await updateDoc(doc(db, "missions", missionId), {
       status: "completed",
     });
+    const mission = missions.find(m => m.id === missionId);
+
+  await logActivity({
+    action:      "mission_completed",
+    category:    "mission",
+    description: `${user?.name} marked "${mission?.name ?? missionId}" as complete`,
+    actorId:     user?.id ?? "",
+    actorName:   user?.name ?? "",
+    actorRole:   "personnel",
+    targetName:  mission?.name ?? missionId,
+    metadata:    { missionId },
+  });
   };
 
   if (missionsLoading) {
