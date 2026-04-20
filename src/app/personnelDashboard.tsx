@@ -78,6 +78,12 @@ export default function PersonnelDashboard({
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [allPersonnel, setAllPersonnel] = useState<Personnel[]>([]);
 
+  const priorityStyles = {
+    Low: "bg-gray-100 text-gray-700 border-gray-200",
+    Medium: "bg-yellow-100 text-yellow-700 border-yellow-200",
+    High: "bg-red-100 text-red-700 border-red-200",
+  };
+
   useEffect(() => {
     getDocs(collection(db, "personnel")).then((snapshot) => {
       const people = snapshot.docs.map((d) => ({
@@ -121,14 +127,14 @@ export default function PersonnelDashboard({
   const confirmLogout = async () => {
     setShowLogoutConfirm(false);
     await logActivity({
-    action:      "personnel_logout",
-    category:    "auth",
-    description: `${user?.name} signed out`,
-    actorId:     user?.id ?? "",
-    actorName:   user?.name ?? "",
-    actorRole:   "personnel",
-    targetName:  user?.name ?? "",
-  });
+      action: "personnel_logout",
+      category: "auth",
+      description: `${user?.name} signed out`,
+      actorId: user?.id ?? "",
+      actorName: user?.name ?? "",
+      actorRole: "personnel",
+      targetName: user?.name ?? "",
+    });
     await logout();
     navigate("/app/login");
   };
@@ -190,13 +196,15 @@ export default function PersonnelDashboard({
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors
+                className={`flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2 text-xs font-medium
+              transition-colors duration-150 focus:outline-none
             ${
               isActive
                 ? "border-indigo-600 text-indigo-600"
                 : "border-transparent text-gray-500 hover:text-gray-700"
             }`}
               >
+                {tab.icon}
                 {tab.label}
               </button>
             );
@@ -219,149 +227,171 @@ export default function PersonnelDashboard({
 
         {/* assigned missions */}
         {activeTab === "missions" && (
-        <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-4 text-base font-bold text-gray-900">
-            Your Missions
-          </h2>
+          <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <h2 className="mb-4 text-base font-bold text-gray-900">
+              Your Missions
+            </h2>
 
-          {/* Sub-tabs */}
-          <div className="mb-4 flex gap-1 border-b border-gray-200">
-            {(["inProgress", "completed"] as MissionSubTab[]).map((key) => (
-              <button
-                key={key}
-                onClick={() => setMissionTab(key)}
-                className={`flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium
+            {/* Sub-tabs */}
+            <div className="mb-4 flex gap-1 border-b border-gray-200">
+              {(["inProgress", "completed"] as MissionSubTab[]).map((key) => (
+                <button
+                  key={key}
+                  onClick={() => setMissionTab(key)}
+                  className={`flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium
             ${
               missionTab === key
                 ? "border-indigo-600 text-indigo-600"
                 : "border-transparent text-gray-500 hover:text-gray-700"
             }`}
-              >
-                {key === "inProgress" ? "In Progress" : "Completed"}
+                >
+                  {key === "inProgress" ? "In Progress" : "Completed"}
 
-                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-bold">
-                  {key === "inProgress"
-                    ? inProgressMissions.length
-                    : completedMissions.length}
-                </span>
-              </button>
-            ))}
-          </div>
+                  <span className="rounded-full px-2 py-0.5 text-xs font-bold">
+                    {key === "inProgress"
+                      ? inProgressMissions.length
+                      : completedMissions.length}
+                  </span>
+                </button>
+              ))}
+            </div>
 
-          {/* Content */}
-          {(missionTab === "inProgress"
-            ? inProgressMissions
-            : completedMissions
-          ).length === 0 ? (
-            <p className="py-6 text-center text-sm text-gray-400">
-              {missionTab === "inProgress"
-                ? "No active missions."
-                : "No completed missions yet."}
-            </p>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {(missionTab === "inProgress"
-                ? inProgressMissions
-                : completedMissions
-              ).map((mission) => (
-                <div
-                  key={mission.id}
-                  className={`rounded-xl border p-4
+            {/* Content */}
+            {(missionTab === "inProgress"
+              ? inProgressMissions
+              : completedMissions
+            ).length === 0 ? (
+              <p className="py-6 text-center text-sm text-gray-400">
+                {missionTab === "inProgress"
+                  ? "No active missions."
+                  : "No completed missions yet."}
+              </p>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {(missionTab === "inProgress"
+                  ? inProgressMissions
+                  : completedMissions
+                ).map((mission) => (
+                  <div
+                    key={mission.id}
+                    className={`rounded-xl border p-4
               ${
                 mission.status === "completed"
                   ? "border-green-200 bg-green-50"
                   : "border-gray-200 bg-white"
               }`}
-                >
-                  {/* Header */}
-                  <div className="mb-2 flex justify-between">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">
-                        {mission.name}
-                      </h3>
-                      <span className="text-xs text-gray-400">
-                        {mission.priority} Priority
-                      </span>
-                    </div>
-
-                    {mission.status === "completed" ? (
-                      <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-bold text-green-700">
-                        ✓ Completed
-                      </span>
-                    ) : (
-                      <button
+                  >
+                    {/* Header */}
+                    <div className="mb-3 flex items-start justify-between">
+                      <div>
+                        <h3 className="font-semibold text-gray-900">
+                          {mission.name}
+                        </h3>
+                        <span
+                          className={`mt-1 inline-block rounded-full border px-2 py-0.5 text-xs font-semibold ${priorityStyles[mission.priority]}`}
+                        >
+                          {mission.priority} Priority
+                        </span>
+                      </div>
+                      {/* Status badge */}
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-bold
+                  ${
+                    mission.status === "completed"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-blue-100 text-blue-700"
+                  }`}
+                      >
+                        {mission.status === "completed"
+                          ? ("✓ Completed"
+                          ): (<button
                         onClick={() => onMarkComplete(mission.id)}
-                        className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-green-700"
+                        className="flex-shrink-0 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-green-700 active:scale-95"
                       >
                         Mark Complete
                       </button>
                     )}
-                  </div>
-
-                  {/* Skills */}
-                  <div className="flex flex-wrap gap-1">
-                    {mission.requiredSkills.map((skill) => (
-                      <span
-                        key={skill}
-                        className="rounded-md bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700"
-                      >
-                        {skill}
                       </span>
-                    ))}
-                  </div>
-                  {/* ── Teammates — who else is on this mission ── */}
-                  {mission.assignedPersonnel.length > 1 && (
-                    <div className="mt-3 border-t border-gray-100 pt-3">
-                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
-                        Your Team
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {mission.assignedPersonnel
-                          // exclude the logged-in person themselves
-                          .filter((pid) => pid !== user?.personnelId)
-                          .map((pid) => {
-                            const teammate = allPersonnel.find(
-                              (p) => p.id === pid,
-                            );
-                            const name = teammate?.name ?? "Unknown";
-                            const initials = name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .slice(0, 2)
-                              .join("");
-
-                            return (
-                              <div
-                                key={pid}
-                                className="flex items-center gap-1.5"
-                              >
-                                {/* Small avatar circle */}
-                                <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">
-                                  {initials}
-                                </div>
-                                <div>
-                                  <span className="text-xs font-semibold text-gray-700">
-                                    {name}
-                                  </span>
-                                  {teammate?.rank && (
-                                    <span className="ml-1 text-xs text-gray-400">
-                                      {teammate.rank}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                      </div>
                     </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+
+                    
+
+                    {/* ── Objective ────────────────── */}
+                    {mission.objective && (
+                      <div className="mb-3 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2">
+                        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          Objective
+                        </p>
+                        <p className="text-sm text-gray-700 leading-relaxed">
+                          {mission.objective}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Skills */}
+                    <div className="flex flex-wrap gap-1">
+                      {mission.requiredSkills.map((skill) => (
+                        <span
+                          key={skill}
+                          className="rounded-md bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                    {/* ── Teammates — who else is on this mission ── */}
+                    {mission.assignedPersonnel.length > 1 && (
+                      <div className="mt-3 border-t border-gray-100 pt-3">
+                        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                          Your Team
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {mission.assignedPersonnel
+                            // exclude the logged-in person themselves
+                            .filter((pid) => pid !== user?.personnelId)
+                            .map((pid) => {
+                              const teammate = allPersonnel.find(
+                                (p) => p.id === pid,
+                              );
+                              const name = teammate?.name ?? "Unknown";
+                              const initials = name
+                                .split(" ")
+                                .map((n) => n[0])
+                                .slice(0, 2)
+                                .join("");
+
+                              return (
+                                <div
+                                  key={pid}
+                                  className="flex items-center gap-1.5"
+                                >
+                                  {/* Small avatar circle */}
+                                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">
+                                    {initials}
+                                  </div>
+                                  <div>
+                                    <span className="text-xs font-semibold text-gray-700">
+                                      {name}
+                                    </span>
+                                    {teammate?.rank && (
+                                      <span className="ml-1 text-xs text-gray-400">
+                                        {teammate.rank}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
         )}
-        </main>
+      </main>
       {showLogoutConfirm && (
         <ConfirmationModal
           icon="logout"
